@@ -1,0 +1,1033 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+
+
+<title>Getting Started with rDeckgl</title>
+
+<script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
+// be compatible with the behavior of Pandoc < 2.8).
+document.addEventListener('DOMContentLoaded', function(e) {
+  var hs = document.querySelectorAll("div.section[class*='level'] > :first-child");
+  var i, h, a;
+  for (i = 0; i < hs.length; i++) {
+    h = hs[i];
+    if (!/^h[1-6]$/i.test(h.tagName)) continue;  // it should be a header h1-h6
+    a = h.attributes;
+    while (a.length > 0) h.removeAttribute(a[0].name);
+  }
+});
+</script>
+
+<style type="text/css">
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+span.underline{text-decoration: underline;}
+div.column{display: inline-block; vertical-align: top; width: 50%;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+</style>
+
+
+
+<style type="text/css">
+code {
+white-space: pre;
+}
+.sourceCode {
+overflow: visible;
+}
+</style>
+<style type="text/css" data-origin="pandoc">
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+{ counter-reset: source-line 0; }
+pre.numberSource code > span
+{ position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+{ content: counter(source-line);
+position: relative; left: -1em; text-align: right; vertical-align: baseline;
+border: none; display: inline-block;
+-webkit-touch-callout: none; -webkit-user-select: none;
+-khtml-user-select: none; -moz-user-select: none;
+-ms-user-select: none; user-select: none;
+padding: 0 4px; width: 4em;
+color: #aaaaaa;
+}
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa; padding-left: 4px; }
+div.sourceCode
+{ }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } 
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.at { color: #7d9029; } 
+code span.bn { color: #40a070; } 
+code span.bu { color: #008000; } 
+code span.cf { color: #007020; font-weight: bold; } 
+code span.ch { color: #4070a0; } 
+code span.cn { color: #880000; } 
+code span.co { color: #60a0b0; font-style: italic; } 
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.do { color: #ba2121; font-style: italic; } 
+code span.dt { color: #902000; } 
+code span.dv { color: #40a070; } 
+code span.er { color: #ff0000; font-weight: bold; } 
+code span.ex { } 
+code span.fl { color: #40a070; } 
+code span.fu { color: #06287e; } 
+code span.im { color: #008000; font-weight: bold; } 
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.kw { color: #007020; font-weight: bold; } 
+code span.op { color: #666666; } 
+code span.ot { color: #007020; } 
+code span.pp { color: #bc7a00; } 
+code span.sc { color: #4070a0; } 
+code span.ss { color: #bb6688; } 
+code span.st { color: #4070a0; } 
+code span.va { color: #19177c; } 
+code span.vs { color: #4070a0; } 
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } 
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    var j = 0;
+    while (j < rules.length) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") {
+        j++;
+        continue;
+      }
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') {
+        j++;
+        continue;
+      }
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+
+<style type="text/css">body {
+background-color: #fff;
+margin: 1em auto;
+max-width: 700px;
+overflow: visible;
+padding-left: 2em;
+padding-right: 2em;
+font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+font-size: 14px;
+line-height: 1.35;
+}
+#TOC {
+clear: both;
+margin: 0 0 10px 10px;
+padding: 4px;
+width: 400px;
+border: 1px solid #CCCCCC;
+border-radius: 5px;
+background-color: #f6f6f6;
+font-size: 13px;
+line-height: 1.3;
+}
+#TOC .toctitle {
+font-weight: bold;
+font-size: 15px;
+margin-left: 5px;
+}
+#TOC ul {
+padding-left: 40px;
+margin-left: -1.5em;
+margin-top: 5px;
+margin-bottom: 5px;
+}
+#TOC ul ul {
+margin-left: -2em;
+}
+#TOC li {
+line-height: 16px;
+}
+table {
+margin: 1em auto;
+border-width: 1px;
+border-color: #DDDDDD;
+border-style: outset;
+border-collapse: collapse;
+}
+table th {
+border-width: 2px;
+padding: 5px;
+border-style: inset;
+}
+table td {
+border-width: 1px;
+border-style: inset;
+line-height: 18px;
+padding: 5px 5px;
+}
+table, table th, table td {
+border-left-style: none;
+border-right-style: none;
+}
+table thead, table tr.even {
+background-color: #f7f7f7;
+}
+p {
+margin: 0.5em 0;
+}
+blockquote {
+background-color: #f6f6f6;
+padding: 0.25em 0.75em;
+}
+hr {
+border-style: solid;
+border: none;
+border-top: 1px solid #777;
+margin: 28px 0;
+}
+dl {
+margin-left: 0;
+}
+dl dd {
+margin-bottom: 13px;
+margin-left: 13px;
+}
+dl dt {
+font-weight: bold;
+}
+ul {
+margin-top: 0;
+}
+ul li {
+list-style: circle outside;
+}
+ul ul {
+margin-bottom: 0;
+}
+pre, code {
+background-color: #f7f7f7;
+border-radius: 3px;
+color: #333;
+white-space: pre-wrap; 
+}
+pre {
+border-radius: 3px;
+margin: 5px 0px 10px 0px;
+padding: 10px;
+}
+pre:not([class]) {
+background-color: #f7f7f7;
+}
+code {
+font-family: Consolas, Monaco, 'Courier New', monospace;
+font-size: 85%;
+}
+p > code, li > code {
+padding: 2px 0px;
+}
+div.figure {
+text-align: center;
+}
+img {
+background-color: #FFFFFF;
+padding: 2px;
+border: 1px solid #DDDDDD;
+border-radius: 3px;
+border: 1px solid #CCCCCC;
+margin: 0 5px;
+}
+h1 {
+margin-top: 0;
+font-size: 35px;
+line-height: 40px;
+}
+h2 {
+border-bottom: 4px solid #f7f7f7;
+padding-top: 10px;
+padding-bottom: 2px;
+font-size: 145%;
+}
+h3 {
+border-bottom: 2px solid #f7f7f7;
+padding-top: 10px;
+font-size: 120%;
+}
+h4 {
+border-bottom: 1px solid #f7f7f7;
+margin-left: 8px;
+font-size: 105%;
+}
+h5, h6 {
+border-bottom: 1px solid #ccc;
+font-size: 105%;
+}
+a {
+color: #0033dd;
+text-decoration: none;
+}
+a:hover {
+color: #6666ff; }
+a:visited {
+color: #800080; }
+a:visited:hover {
+color: #BB00BB; }
+a[href^="http:"] {
+text-decoration: underline; }
+a[href^="https:"] {
+text-decoration: underline; }
+
+code > span.kw { color: #555; font-weight: bold; } 
+code > span.dt { color: #902000; } 
+code > span.dv { color: #40a070; } 
+code > span.bn { color: #d14; } 
+code > span.fl { color: #d14; } 
+code > span.ch { color: #d14; } 
+code > span.st { color: #d14; } 
+code > span.co { color: #888888; font-style: italic; } 
+code > span.ot { color: #007020; } 
+code > span.al { color: #ff0000; font-weight: bold; } 
+code > span.fu { color: #900; font-weight: bold; } 
+code > span.er { color: #a61717; background-color: #e3d2d2; } 
+</style>
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">Getting Started with rDeckgl</h1>
+
+
+
+<div id="introduction" class="section level2">
+<h2>Introduction</h2>
+<p><strong>rDeckgl</strong> provides R bindings for <a href="https://deck.gl">deck.gl</a> 9.2.2, a WebGL-powered framework for
+visualizing large datasets. This vignette demonstrates the basic usage
+of rDeckgl with working examples.</p>
+</div>
+<div id="installation" class="section level2">
+<h2>Installation</h2>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="co"># From CRAN:</span></span>
+<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a><span class="fu">install.packages</span>(<span class="st">&quot;rDeckgl&quot;</span>)</span>
+<span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a></span>
+<span id="cb1-4"><a href="#cb1-4" tabindex="-1"></a><span class="co"># Development version from GitHub:</span></span>
+<span id="cb1-5"><a href="#cb1-5" tabindex="-1"></a><span class="co"># remotes::install_github(&quot;TiRizvanov/rDeckgl&quot;)</span></span></code></pre></div>
+</div>
+<div id="example-1-basic-scatterplot" class="section level2">
+<h2>Example 1: Basic Scatterplot</h2>
+<p>This example demonstrates deck.gl rendering performance with ~10,000
+points using a viridis color palette:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a><span class="fu">library</span>(rDeckgl)</span>
+<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a><span class="fu">library</span>(scales)</span>
+<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a></span>
+<span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a><span class="co"># Generate a spaced-out grid of ~10K points around San Francisco</span></span>
+<span id="cb2-5"><a href="#cb2-5" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">42</span>)</span>
+<span id="cb2-6"><a href="#cb2-6" tabindex="-1"></a>grid_size <span class="ot">&lt;-</span> <span class="dv">100</span><span class="dt">L</span></span>
+<span id="cb2-7"><a href="#cb2-7" tabindex="-1"></a></span>
+<span id="cb2-8"><a href="#cb2-8" tabindex="-1"></a>lon_seq <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="sc">-</span><span class="fl">122.515</span>, <span class="sc">-</span><span class="fl">122.355</span>, <span class="at">length.out =</span> grid_size)</span>
+<span id="cb2-9"><a href="#cb2-9" tabindex="-1"></a>lat_seq <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="fl">37.70</span>, <span class="fl">37.82</span>, <span class="at">length.out =</span> grid_size)</span>
+<span id="cb2-10"><a href="#cb2-10" tabindex="-1"></a>grid <span class="ot">&lt;-</span> <span class="fu">expand.grid</span>(<span class="at">lon =</span> lon_seq, <span class="at">lat =</span> lat_seq)</span>
+<span id="cb2-11"><a href="#cb2-11" tabindex="-1"></a>grid<span class="sc">$</span>value <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(<span class="fu">nrow</span>(grid), <span class="at">mean =</span> <span class="dv">0</span>, <span class="at">sd =</span> <span class="dv">1</span>)</span>
+<span id="cb2-12"><a href="#cb2-12" tabindex="-1"></a></span>
+<span id="cb2-13"><a href="#cb2-13" tabindex="-1"></a><span class="co"># Add light jitter</span></span>
+<span id="cb2-14"><a href="#cb2-14" tabindex="-1"></a>jitter_strength <span class="ot">&lt;-</span> <span class="fl">0.0007</span></span>
+<span id="cb2-15"><a href="#cb2-15" tabindex="-1"></a>grid<span class="sc">$</span>lon <span class="ot">&lt;-</span> grid<span class="sc">$</span>lon <span class="sc">+</span> <span class="fu">runif</span>(<span class="fu">nrow</span>(grid), <span class="sc">-</span>jitter_strength, jitter_strength)</span>
+<span id="cb2-16"><a href="#cb2-16" tabindex="-1"></a>grid<span class="sc">$</span>lat <span class="ot">&lt;-</span> grid<span class="sc">$</span>lat <span class="sc">+</span> <span class="fu">runif</span>(<span class="fu">nrow</span>(grid), <span class="sc">-</span>jitter_strength, jitter_strength)</span>
+<span id="cb2-17"><a href="#cb2-17" tabindex="-1"></a>grid<span class="sc">$</span>radius <span class="ot">&lt;-</span> <span class="fu">runif</span>(<span class="fu">nrow</span>(grid), <span class="dv">25</span>, <span class="dv">80</span>)</span>
+<span id="cb2-18"><a href="#cb2-18" tabindex="-1"></a></span>
+<span id="cb2-19"><a href="#cb2-19" tabindex="-1"></a>points_data <span class="ot">&lt;-</span> grid</span>
+<span id="cb2-20"><a href="#cb2-20" tabindex="-1"></a></span>
+<span id="cb2-21"><a href="#cb2-21" tabindex="-1"></a><span class="co"># Map &#39;value&#39; to viridis color palette</span></span>
+<span id="cb2-22"><a href="#cb2-22" tabindex="-1"></a>domain_range <span class="ot">&lt;-</span> <span class="fu">range</span>(points_data<span class="sc">$</span>value)</span>
+<span id="cb2-23"><a href="#cb2-23" tabindex="-1"></a>palette_fun <span class="ot">&lt;-</span> <span class="fu">col_numeric</span>(<span class="fu">viridis_pal</span>(<span class="at">option =</span> <span class="st">&quot;B&quot;</span>)(<span class="dv">256</span>), domain_range)</span>
+<span id="cb2-24"><a href="#cb2-24" tabindex="-1"></a>rgba <span class="ot">&lt;-</span> <span class="fu">col2rgb</span>(<span class="fu">palette_fun</span>(points_data<span class="sc">$</span>value))</span>
+<span id="cb2-25"><a href="#cb2-25" tabindex="-1"></a>points_data<span class="sc">$</span>color_r <span class="ot">&lt;-</span> rgba[<span class="dv">1</span>, ]</span>
+<span id="cb2-26"><a href="#cb2-26" tabindex="-1"></a>points_data<span class="sc">$</span>color_g <span class="ot">&lt;-</span> rgba[<span class="dv">2</span>, ]</span>
+<span id="cb2-27"><a href="#cb2-27" tabindex="-1"></a>points_data<span class="sc">$</span>color_b <span class="ot">&lt;-</span> rgba[<span class="dv">3</span>, ]</span>
+<span id="cb2-28"><a href="#cb2-28" tabindex="-1"></a></span>
+<span id="cb2-29"><a href="#cb2-29" tabindex="-1"></a>spec <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
+<span id="cb2-30"><a href="#cb2-30" tabindex="-1"></a>  <span class="st">`</span><span class="at">@@type</span><span class="st">`</span> <span class="ot">=</span> <span class="st">&quot;DeckGL&quot;</span>,</span>
+<span id="cb2-31"><a href="#cb2-31" tabindex="-1"></a>  <span class="at">initialViewState =</span> <span class="fu">list</span>(</span>
+<span id="cb2-32"><a href="#cb2-32" tabindex="-1"></a>    <span class="at">longitude =</span> <span class="fu">mean</span>(<span class="fu">range</span>(points_data<span class="sc">$</span>lon)),</span>
+<span id="cb2-33"><a href="#cb2-33" tabindex="-1"></a>    <span class="at">latitude =</span> <span class="fu">mean</span>(<span class="fu">range</span>(points_data<span class="sc">$</span>lat)),</span>
+<span id="cb2-34"><a href="#cb2-34" tabindex="-1"></a>    <span class="at">zoom =</span> <span class="fl">11.5</span>,</span>
+<span id="cb2-35"><a href="#cb2-35" tabindex="-1"></a>    <span class="at">pitch =</span> <span class="dv">20</span>,</span>
+<span id="cb2-36"><a href="#cb2-36" tabindex="-1"></a>    <span class="at">bearing =</span> <span class="dv">0</span></span>
+<span id="cb2-37"><a href="#cb2-37" tabindex="-1"></a>  ),</span>
+<span id="cb2-38"><a href="#cb2-38" tabindex="-1"></a>  <span class="at">tooltip =</span> <span class="fu">list</span>(</span>
+<span id="cb2-39"><a href="#cb2-39" tabindex="-1"></a>    <span class="at">html =</span> <span class="st">&quot;&lt;div&gt;&lt;strong&gt;Value:&lt;/strong&gt; {value}&lt;br/&gt;&lt;strong&gt;Radius:&lt;/strong&gt; {radius} m&lt;/div&gt;&quot;</span>,</span>
+<span id="cb2-40"><a href="#cb2-40" tabindex="-1"></a>    <span class="at">style =</span> <span class="fu">list</span>(</span>
+<span id="cb2-41"><a href="#cb2-41" tabindex="-1"></a>      <span class="at">backgroundColor =</span> <span class="st">&quot;#0e1119&quot;</span>,</span>
+<span id="cb2-42"><a href="#cb2-42" tabindex="-1"></a>      <span class="at">color =</span> <span class="st">&quot;#FFFFFF&quot;</span>,</span>
+<span id="cb2-43"><a href="#cb2-43" tabindex="-1"></a>      <span class="at">fontSize =</span> <span class="st">&quot;12px&quot;</span></span>
+<span id="cb2-44"><a href="#cb2-44" tabindex="-1"></a>    )</span>
+<span id="cb2-45"><a href="#cb2-45" tabindex="-1"></a>  ),</span>
+<span id="cb2-46"><a href="#cb2-46" tabindex="-1"></a>  <span class="at">views =</span> <span class="fu">list</span>(</span>
+<span id="cb2-47"><a href="#cb2-47" tabindex="-1"></a>    <span class="fu">list</span>(</span>
+<span id="cb2-48"><a href="#cb2-48" tabindex="-1"></a>      <span class="st">`</span><span class="at">@@type</span><span class="st">`</span> <span class="ot">=</span> <span class="st">&quot;MapView&quot;</span>,</span>
+<span id="cb2-49"><a href="#cb2-49" tabindex="-1"></a>      <span class="at">controller =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb2-50"><a href="#cb2-50" tabindex="-1"></a>      <span class="at">mapStyle =</span> <span class="st">&quot;https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json&quot;</span></span>
+<span id="cb2-51"><a href="#cb2-51" tabindex="-1"></a>    )</span>
+<span id="cb2-52"><a href="#cb2-52" tabindex="-1"></a>  ),</span>
+<span id="cb2-53"><a href="#cb2-53" tabindex="-1"></a>  <span class="at">layers =</span> <span class="fu">list</span>(</span>
+<span id="cb2-54"><a href="#cb2-54" tabindex="-1"></a>    <span class="fu">list</span>(</span>
+<span id="cb2-55"><a href="#cb2-55" tabindex="-1"></a>      <span class="st">`</span><span class="at">@@type</span><span class="st">`</span> <span class="ot">=</span> <span class="st">&quot;ScatterplotLayer&quot;</span>,</span>
+<span id="cb2-56"><a href="#cb2-56" tabindex="-1"></a>      <span class="at">id =</span> <span class="st">&quot;scatterplot&quot;</span>,</span>
+<span id="cb2-57"><a href="#cb2-57" tabindex="-1"></a>      <span class="at">data =</span> <span class="fu">list</span>(</span>
+<span id="cb2-58"><a href="#cb2-58" tabindex="-1"></a>        <span class="at">type =</span> <span class="st">&quot;duckdb&quot;</span>,</span>
+<span id="cb2-59"><a href="#cb2-59" tabindex="-1"></a>        <span class="at">query =</span> <span class="st">&quot;SELECT lon, lat, radius, value, color_r, color_g, color_b FROM points&quot;</span></span>
+<span id="cb2-60"><a href="#cb2-60" tabindex="-1"></a>      ),</span>
+<span id="cb2-61"><a href="#cb2-61" tabindex="-1"></a>      <span class="at">getPosition =</span> <span class="st">&quot;@@=[lon, lat]&quot;</span>,</span>
+<span id="cb2-62"><a href="#cb2-62" tabindex="-1"></a>      <span class="at">getRadius =</span> <span class="st">&quot;@@=radius&quot;</span>,</span>
+<span id="cb2-63"><a href="#cb2-63" tabindex="-1"></a>      <span class="at">getFillColor =</span> <span class="st">&quot;@@=[color_r, color_g, color_b, 200]&quot;</span>,</span>
+<span id="cb2-64"><a href="#cb2-64" tabindex="-1"></a>      <span class="at">pickable =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb2-65"><a href="#cb2-65" tabindex="-1"></a>      <span class="at">autoHighlight =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb2-66"><a href="#cb2-66" tabindex="-1"></a>      <span class="at">radiusUnits =</span> <span class="st">&quot;meters&quot;</span></span>
+<span id="cb2-67"><a href="#cb2-67" tabindex="-1"></a>    )</span>
+<span id="cb2-68"><a href="#cb2-68" tabindex="-1"></a>  )</span>
+<span id="cb2-69"><a href="#cb2-69" tabindex="-1"></a>)</span>
+<span id="cb2-70"><a href="#cb2-70" tabindex="-1"></a></span>
+<span id="cb2-71"><a href="#cb2-71" tabindex="-1"></a><span class="fu">deckgl</span>(</span>
+<span id="cb2-72"><a href="#cb2-72" tabindex="-1"></a>  <span class="at">spec =</span> spec,</span>
+<span id="cb2-73"><a href="#cb2-73" tabindex="-1"></a>  <span class="at">data =</span> <span class="fu">list</span>(<span class="at">points =</span> points_data),</span>
+<span id="cb2-74"><a href="#cb2-74" tabindex="-1"></a>  <span class="at">width =</span> <span class="st">&quot;100%&quot;</span>,</span>
+<span id="cb2-75"><a href="#cb2-75" tabindex="-1"></a>  <span class="at">height =</span> <span class="st">&quot;600px&quot;</span></span>
+<span id="cb2-76"><a href="#cb2-76" tabindex="-1"></a>)</span></code></pre></div>
+</div>
+<div id="example-2-hexagon-heatmap" class="section level2">
+<h2>Example 2: Hexagon Heatmap</h2>
+<p>This example uses remote data from the deck.gl website to create a 3D
+hexagon heatmap:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="fu">library</span>(rDeckgl)</span>
+<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a></span>
+<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a>hexagon_spec <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
+<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a>  <span class="at">initialViewState =</span> <span class="fu">list</span>(</span>
+<span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a>    <span class="at">longitude =</span> <span class="sc">-</span><span class="fl">1.4157267858730052</span>,</span>
+<span id="cb3-6"><a href="#cb3-6" tabindex="-1"></a>    <span class="at">latitude =</span> <span class="fl">52.232395363869415</span>,</span>
+<span id="cb3-7"><a href="#cb3-7" tabindex="-1"></a>    <span class="at">zoom =</span> <span class="fl">6.6</span>,</span>
+<span id="cb3-8"><a href="#cb3-8" tabindex="-1"></a>    <span class="at">pitch =</span> <span class="fl">40.5</span>,</span>
+<span id="cb3-9"><a href="#cb3-9" tabindex="-1"></a>    <span class="at">bearing =</span> <span class="sc">-</span><span class="fl">27.396674584323023</span></span>
+<span id="cb3-10"><a href="#cb3-10" tabindex="-1"></a>  ),</span>
+<span id="cb3-11"><a href="#cb3-11" tabindex="-1"></a>  <span class="at">views =</span> <span class="fu">list</span>(</span>
+<span id="cb3-12"><a href="#cb3-12" tabindex="-1"></a>    <span class="fu">list</span>(</span>
+<span id="cb3-13"><a href="#cb3-13" tabindex="-1"></a>      <span class="st">`</span><span class="at">@@type</span><span class="st">`</span> <span class="ot">=</span> <span class="st">&quot;MapView&quot;</span>,</span>
+<span id="cb3-14"><a href="#cb3-14" tabindex="-1"></a>      <span class="at">controller =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb3-15"><a href="#cb3-15" tabindex="-1"></a>      <span class="at">mapStyle =</span> <span class="st">&quot;https://basemaps.cartocdn.com/gl/dark-matter-nolabels-gl-style/style.json&quot;</span></span>
+<span id="cb3-16"><a href="#cb3-16" tabindex="-1"></a>    )</span>
+<span id="cb3-17"><a href="#cb3-17" tabindex="-1"></a>  ),</span>
+<span id="cb3-18"><a href="#cb3-18" tabindex="-1"></a>  <span class="at">layers =</span> <span class="fu">list</span>(</span>
+<span id="cb3-19"><a href="#cb3-19" tabindex="-1"></a>    <span class="fu">list</span>(</span>
+<span id="cb3-20"><a href="#cb3-20" tabindex="-1"></a>      <span class="st">`</span><span class="at">@@type</span><span class="st">`</span> <span class="ot">=</span> <span class="st">&quot;HexagonLayer&quot;</span>,</span>
+<span id="cb3-21"><a href="#cb3-21" tabindex="-1"></a>      <span class="at">id =</span> <span class="st">&quot;heatmap&quot;</span>,</span>
+<span id="cb3-22"><a href="#cb3-22" tabindex="-1"></a>      <span class="at">data =</span> <span class="st">&quot;https://raw.githubusercontent.com/visgl/deck.gl-data/master/examples/3d-heatmap/heatmap-data.csv&quot;</span>,</span>
+<span id="cb3-23"><a href="#cb3-23" tabindex="-1"></a>      <span class="at">coverage =</span> <span class="dv">1</span>,</span>
+<span id="cb3-24"><a href="#cb3-24" tabindex="-1"></a>      <span class="at">pickable =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb3-25"><a href="#cb3-25" tabindex="-1"></a>      <span class="at">elevationRange =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">3000</span>),</span>
+<span id="cb3-26"><a href="#cb3-26" tabindex="-1"></a>      <span class="at">elevationScale =</span> <span class="dv">50</span>,</span>
+<span id="cb3-27"><a href="#cb3-27" tabindex="-1"></a>      <span class="at">extruded =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb3-28"><a href="#cb3-28" tabindex="-1"></a>      <span class="at">getPosition =</span> <span class="st">&quot;@@=[lng,lat]&quot;</span>,</span>
+<span id="cb3-29"><a href="#cb3-29" tabindex="-1"></a>      <span class="at">radius =</span> <span class="dv">1000</span>,</span>
+<span id="cb3-30"><a href="#cb3-30" tabindex="-1"></a>      <span class="at">colorRange =</span> <span class="fu">list</span>(</span>
+<span id="cb3-31"><a href="#cb3-31" tabindex="-1"></a>        <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">152</span>, <span class="dv">189</span>),</span>
+<span id="cb3-32"><a href="#cb3-32" tabindex="-1"></a>        <span class="fu">c</span>(<span class="dv">73</span>, <span class="dv">227</span>, <span class="dv">206</span>),</span>
+<span id="cb3-33"><a href="#cb3-33" tabindex="-1"></a>        <span class="fu">c</span>(<span class="dv">216</span>, <span class="dv">254</span>, <span class="dv">181</span>),</span>
+<span id="cb3-34"><a href="#cb3-34" tabindex="-1"></a>        <span class="fu">c</span>(<span class="dv">254</span>, <span class="dv">237</span>, <span class="dv">177</span>),</span>
+<span id="cb3-35"><a href="#cb3-35" tabindex="-1"></a>        <span class="fu">c</span>(<span class="dv">254</span>, <span class="dv">173</span>, <span class="dv">84</span>),</span>
+<span id="cb3-36"><a href="#cb3-36" tabindex="-1"></a>        <span class="fu">c</span>(<span class="dv">209</span>, <span class="dv">55</span>, <span class="dv">78</span>)</span>
+<span id="cb3-37"><a href="#cb3-37" tabindex="-1"></a>      )</span>
+<span id="cb3-38"><a href="#cb3-38" tabindex="-1"></a>    )</span>
+<span id="cb3-39"><a href="#cb3-39" tabindex="-1"></a>  )</span>
+<span id="cb3-40"><a href="#cb3-40" tabindex="-1"></a>)</span>
+<span id="cb3-41"><a href="#cb3-41" tabindex="-1"></a></span>
+<span id="cb3-42"><a href="#cb3-42" tabindex="-1"></a><span class="fu">deckgl</span>(</span>
+<span id="cb3-43"><a href="#cb3-43" tabindex="-1"></a>  <span class="at">spec =</span> hexagon_spec,</span>
+<span id="cb3-44"><a href="#cb3-44" tabindex="-1"></a>  <span class="at">width =</span> <span class="st">&quot;100%&quot;</span>,</span>
+<span id="cb3-45"><a href="#cb3-45" tabindex="-1"></a>  <span class="at">height =</span> <span class="st">&quot;600px&quot;</span></span>
+<span id="cb3-46"><a href="#cb3-46" tabindex="-1"></a>)</span></code></pre></div>
+</div>
+<div id="example-3-in-situ-cell-segmentation-geoarrow-polygons-centroids" class="section level2">
+<h2>Example 3: In-situ Cell Segmentation (GeoArrow polygons +
+centroids)</h2>
+<p>This example reproduces the kind of visualization used in spatial
+omics analysis — cell-boundary polygons rendered via the fast GeoArrow
+path, with a centroid scatter layer coloured by simulated expression
+level. All data is generated in-memory; no external files are
+required.</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a><span class="fu">library</span>(rDeckgl)</span>
+<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a><span class="fu">library</span>(DBI)</span>
+<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a><span class="fu">library</span>(duckdb)</span>
+<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a></span>
+<span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a><span class="co"># ── 1. Generate mock spatial omics data ────────────────────────────────────────</span></span>
+<span id="cb4-6"><a href="#cb4-6" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">42</span>)</span>
+<span id="cb4-7"><a href="#cb4-7" tabindex="-1"></a>n_cells  <span class="ot">&lt;-</span> <span class="dv">300</span></span>
+<span id="cb4-8"><a href="#cb4-8" tabindex="-1"></a>field_w  <span class="ot">&lt;-</span> <span class="dv">8000</span>   <span class="co"># microns</span></span>
+<span id="cb4-9"><a href="#cb4-9" tabindex="-1"></a>field_h  <span class="ot">&lt;-</span> <span class="dv">6000</span></span>
+<span id="cb4-10"><a href="#cb4-10" tabindex="-1"></a></span>
+<span id="cb4-11"><a href="#cb4-11" tabindex="-1"></a><span class="co"># Random centroids</span></span>
+<span id="cb4-12"><a href="#cb4-12" tabindex="-1"></a>cx <span class="ot">&lt;-</span> <span class="fu">runif</span>(n_cells, <span class="dv">200</span>, field_w <span class="sc">-</span> <span class="dv">200</span>)</span>
+<span id="cb4-13"><a href="#cb4-13" tabindex="-1"></a>cy <span class="ot">&lt;-</span> <span class="fu">runif</span>(n_cells, <span class="dv">200</span>, field_h <span class="sc">-</span> <span class="dv">200</span>)</span>
+<span id="cb4-14"><a href="#cb4-14" tabindex="-1"></a></span>
+<span id="cb4-15"><a href="#cb4-15" tabindex="-1"></a><span class="co"># Simulated per-cell metrics</span></span>
+<span id="cb4-16"><a href="#cb4-16" tabindex="-1"></a>total_expr <span class="ot">&lt;-</span> <span class="fu">pmax</span>(<span class="dv">0</span>, <span class="fu">round</span>(<span class="fu">rnorm</span>(n_cells, <span class="dv">200</span>, <span class="dv">80</span>)))</span>
+<span id="cb4-17"><a href="#cb4-17" tabindex="-1"></a>cluster    <span class="ot">&lt;-</span> <span class="fu">paste0</span>(<span class="st">&quot;c&quot;</span>, <span class="fu">sample.int</span>(<span class="dv">6</span><span class="dt">L</span>, n_cells, <span class="at">replace =</span> <span class="cn">TRUE</span>))</span>
+<span id="cb4-18"><a href="#cb4-18" tabindex="-1"></a></span>
+<span id="cb4-19"><a href="#cb4-19" tabindex="-1"></a><span class="co"># Colour centroids by cluster</span></span>
+<span id="cb4-20"><a href="#cb4-20" tabindex="-1"></a>pal  <span class="ot">&lt;-</span> grDevices<span class="sc">::</span><span class="fu">hcl.colors</span>(<span class="dv">6</span>, <span class="st">&quot;Dark 3&quot;</span>)</span>
+<span id="cb4-21"><a href="#cb4-21" tabindex="-1"></a>rgb_ <span class="ot">&lt;-</span> grDevices<span class="sc">::</span><span class="fu">col2rgb</span>(pal[<span class="fu">as.integer</span>(<span class="fu">factor</span>(cluster))])</span>
+<span id="cb4-22"><a href="#cb4-22" tabindex="-1"></a>cr   <span class="ot">&lt;-</span> <span class="fu">as.integer</span>(rgb_[<span class="dv">1</span>, ])</span>
+<span id="cb4-23"><a href="#cb4-23" tabindex="-1"></a>cg   <span class="ot">&lt;-</span> <span class="fu">as.integer</span>(rgb_[<span class="dv">2</span>, ])</span>
+<span id="cb4-24"><a href="#cb4-24" tabindex="-1"></a>cb   <span class="ot">&lt;-</span> <span class="fu">as.integer</span>(rgb_[<span class="dv">3</span>, ])</span>
+<span id="cb4-25"><a href="#cb4-25" tabindex="-1"></a></span>
+<span id="cb4-26"><a href="#cb4-26" tabindex="-1"></a>centroids <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb4-27"><a href="#cb4-27" tabindex="-1"></a>  <span class="at">cell_ID    =</span> <span class="fu">sprintf</span>(<span class="st">&quot;CELL_%04d&quot;</span>, <span class="fu">seq_len</span>(n_cells)),</span>
+<span id="cb4-28"><a href="#cb4-28" tabindex="-1"></a>  <span class="at">x =</span> cx, <span class="at">y =</span> cy,</span>
+<span id="cb4-29"><a href="#cb4-29" tabindex="-1"></a>  total_expr, cluster, <span class="at">r =</span> cr, <span class="at">g =</span> cg, <span class="at">b =</span> cb</span>
+<span id="cb4-30"><a href="#cb4-30" tabindex="-1"></a>)</span>
+<span id="cb4-31"><a href="#cb4-31" tabindex="-1"></a></span>
+<span id="cb4-32"><a href="#cb4-32" tabindex="-1"></a><span class="co"># Build irregular hexagonal WKT polygons</span></span>
+<span id="cb4-33"><a href="#cb4-33" tabindex="-1"></a>angles <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="dv">0</span>, <span class="dv">2</span> <span class="sc">*</span> pi, <span class="at">length.out =</span> <span class="dv">7</span>)[<span class="sc">-</span><span class="dv">7</span>]   <span class="co"># 6 vertices</span></span>
+<span id="cb4-34"><a href="#cb4-34" tabindex="-1"></a>wkt_polygons <span class="ot">&lt;-</span> <span class="fu">vapply</span>(<span class="fu">seq_len</span>(n_cells), <span class="cf">function</span>(i) {</span>
+<span id="cb4-35"><a href="#cb4-35" tabindex="-1"></a>  radius <span class="ot">&lt;-</span> <span class="fu">runif</span>(<span class="dv">1</span>, <span class="dv">80</span>, <span class="dv">200</span>)</span>
+<span id="cb4-36"><a href="#cb4-36" tabindex="-1"></a>  jitter <span class="ot">&lt;-</span> <span class="fu">runif</span>(<span class="dv">6</span>, <span class="fl">0.80</span>, <span class="fl">1.20</span>)</span>
+<span id="cb4-37"><a href="#cb4-37" tabindex="-1"></a>  vx <span class="ot">&lt;-</span> cx[i] <span class="sc">+</span> radius <span class="sc">*</span> jitter <span class="sc">*</span> <span class="fu">cos</span>(angles)</span>
+<span id="cb4-38"><a href="#cb4-38" tabindex="-1"></a>  vy <span class="ot">&lt;-</span> cy[i] <span class="sc">+</span> radius <span class="sc">*</span> jitter <span class="sc">*</span> <span class="fu">sin</span>(angles)</span>
+<span id="cb4-39"><a href="#cb4-39" tabindex="-1"></a>  pts <span class="ot">&lt;-</span> <span class="fu">paste</span>(<span class="fu">sprintf</span>(<span class="st">&quot;%f %f&quot;</span>, <span class="fu">c</span>(vx, vx[<span class="dv">1</span>]), <span class="fu">c</span>(vy, vy[<span class="dv">1</span>])), <span class="at">collapse =</span> <span class="st">&quot;, &quot;</span>)</span>
+<span id="cb4-40"><a href="#cb4-40" tabindex="-1"></a>  <span class="fu">sprintf</span>(<span class="st">&quot;POLYGON((%s))&quot;</span>, pts)</span>
+<span id="cb4-41"><a href="#cb4-41" tabindex="-1"></a>}, <span class="fu">character</span>(<span class="dv">1</span>))</span>
+<span id="cb4-42"><a href="#cb4-42" tabindex="-1"></a></span>
+<span id="cb4-43"><a href="#cb4-43" tabindex="-1"></a>polygon_df <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb4-44"><a href="#cb4-44" tabindex="-1"></a>  <span class="at">cell_ID  =</span> centroids<span class="sc">$</span>cell_ID,</span>
+<span id="cb4-45"><a href="#cb4-45" tabindex="-1"></a>  <span class="at">wkt      =</span> wkt_polygons</span>
+<span id="cb4-46"><a href="#cb4-46" tabindex="-1"></a>)</span>
+<span id="cb4-47"><a href="#cb4-47" tabindex="-1"></a></span>
+<span id="cb4-48"><a href="#cb4-48" tabindex="-1"></a><span class="co"># ── 2. Load data into in-memory DuckDB with spatial extension ──────────────────</span></span>
+<span id="cb4-49"><a href="#cb4-49" tabindex="-1"></a>con <span class="ot">&lt;-</span> <span class="fu">dbConnect</span>(<span class="fu">duckdb</span>(), <span class="at">dbdir =</span> <span class="st">&quot;:memory:&quot;</span>)</span>
+<span id="cb4-50"><a href="#cb4-50" tabindex="-1"></a></span>
+<span id="cb4-51"><a href="#cb4-51" tabindex="-1"></a><span class="cf">for</span> (sql <span class="cf">in</span> <span class="fu">c</span>(<span class="st">&quot;INSTALL spatial&quot;</span>, <span class="st">&quot;LOAD spatial&quot;</span>,</span>
+<span id="cb4-52"><a href="#cb4-52" tabindex="-1"></a>              <span class="st">&quot;INSTALL nanoarrow FROM community&quot;</span>, <span class="st">&quot;LOAD nanoarrow&quot;</span>,</span>
+<span id="cb4-53"><a href="#cb4-53" tabindex="-1"></a>              <span class="st">&quot;CALL register_geoarrow_extensions()&quot;</span>)) {</span>
+<span id="cb4-54"><a href="#cb4-54" tabindex="-1"></a>  <span class="fu">try</span>(<span class="fu">dbExecute</span>(con, sql), <span class="at">silent =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb4-55"><a href="#cb4-55" tabindex="-1"></a>}</span>
+<span id="cb4-56"><a href="#cb4-56" tabindex="-1"></a></span>
+<span id="cb4-57"><a href="#cb4-57" tabindex="-1"></a><span class="fu">dbWriteTable</span>(con, <span class="st">&quot;poly_raw&quot;</span>, polygon_df, <span class="at">overwrite =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb4-58"><a href="#cb4-58" tabindex="-1"></a><span class="fu">dbExecute</span>(con, <span class="st">&quot;</span></span>
+<span id="cb4-59"><a href="#cb4-59" tabindex="-1"></a><span class="st">  CREATE TABLE cells AS</span></span>
+<span id="cb4-60"><a href="#cb4-60" tabindex="-1"></a><span class="st">  SELECT cell_ID,</span></span>
+<span id="cb4-61"><a href="#cb4-61" tabindex="-1"></a><span class="st">         ST_GeomFromText(wkt) AS geometry</span></span>
+<span id="cb4-62"><a href="#cb4-62" tabindex="-1"></a><span class="st">  FROM poly_raw</span></span>
+<span id="cb4-63"><a href="#cb4-63" tabindex="-1"></a><span class="st">  WHERE wkt IS NOT NULL</span></span>
+<span id="cb4-64"><a href="#cb4-64" tabindex="-1"></a><span class="st">&quot;</span>)</span>
+<span id="cb4-65"><a href="#cb4-65" tabindex="-1"></a></span>
+<span id="cb4-66"><a href="#cb4-66" tabindex="-1"></a><span class="co"># ── 3. Build the deck.gl spec ─────────────────────────────────────────────────</span></span>
+<span id="cb4-67"><a href="#cb4-67" tabindex="-1"></a><span class="co"># Orthographic (Cartesian) view — same as spatial omics viewers</span></span>
+<span id="cb4-68"><a href="#cb4-68" tabindex="-1"></a>cx_mid <span class="ot">&lt;-</span> field_w <span class="sc">/</span> <span class="dv">2</span></span>
+<span id="cb4-69"><a href="#cb4-69" tabindex="-1"></a>cy_mid <span class="ot">&lt;-</span> field_h <span class="sc">/</span> <span class="dv">2</span></span>
+<span id="cb4-70"><a href="#cb4-70" tabindex="-1"></a>zoom   <span class="ot">&lt;-</span> <span class="fu">log2</span>(<span class="dv">600</span> <span class="sc">/</span> field_w)   <span class="co"># fit ~600 px wide</span></span>
+<span id="cb4-71"><a href="#cb4-71" tabindex="-1"></a></span>
+<span id="cb4-72"><a href="#cb4-72" tabindex="-1"></a>polygon_query <span class="ot">&lt;-</span> <span class="st">&quot;SELECT cell_ID, geometry FROM cells WHERE geometry IS NOT NULL&quot;</span></span>
+<span id="cb4-73"><a href="#cb4-73" tabindex="-1"></a></span>
+<span id="cb4-74"><a href="#cb4-74" tabindex="-1"></a>spec <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
+<span id="cb4-75"><a href="#cb4-75" tabindex="-1"></a>  <span class="at">views =</span> <span class="fu">list</span>(</span>
+<span id="cb4-76"><a href="#cb4-76" tabindex="-1"></a>    <span class="fu">list</span>(</span>
+<span id="cb4-77"><a href="#cb4-77" tabindex="-1"></a>      <span class="st">`</span><span class="at">@@type</span><span class="st">`</span> <span class="ot">=</span> <span class="st">&quot;OrthographicView&quot;</span>,</span>
+<span id="cb4-78"><a href="#cb4-78" tabindex="-1"></a>      <span class="at">controller =</span> <span class="cn">TRUE</span></span>
+<span id="cb4-79"><a href="#cb4-79" tabindex="-1"></a>    )</span>
+<span id="cb4-80"><a href="#cb4-80" tabindex="-1"></a>  ),</span>
+<span id="cb4-81"><a href="#cb4-81" tabindex="-1"></a>  <span class="at">initialViewState =</span> <span class="fu">list</span>(</span>
+<span id="cb4-82"><a href="#cb4-82" tabindex="-1"></a>    <span class="at">target =</span> <span class="fu">list</span>(cx_mid, cy_mid, <span class="dv">0</span>),</span>
+<span id="cb4-83"><a href="#cb4-83" tabindex="-1"></a>    <span class="at">zoom   =</span> zoom,</span>
+<span id="cb4-84"><a href="#cb4-84" tabindex="-1"></a>    <span class="at">minZoom =</span> <span class="sc">-</span><span class="dv">5</span>,</span>
+<span id="cb4-85"><a href="#cb4-85" tabindex="-1"></a>    <span class="at">maxZoom =</span>  <span class="dv">8</span></span>
+<span id="cb4-86"><a href="#cb4-86" tabindex="-1"></a>  ),</span>
+<span id="cb4-87"><a href="#cb4-87" tabindex="-1"></a>  <span class="at">layers =</span> <span class="fu">list</span>(</span>
+<span id="cb4-88"><a href="#cb4-88" tabindex="-1"></a>    <span class="fu">list</span>(</span>
+<span id="cb4-89"><a href="#cb4-89" tabindex="-1"></a>      <span class="st">`</span><span class="at">@@type</span><span class="st">`</span>           <span class="ot">=</span> <span class="st">&quot;GeoArrowSolidPolygonLayer&quot;</span>,</span>
+<span id="cb4-90"><a href="#cb4-90" tabindex="-1"></a>      <span class="at">id                 =</span> <span class="st">&quot;cell-polygons&quot;</span>,</span>
+<span id="cb4-91"><a href="#cb4-91" tabindex="-1"></a>      <span class="at">data               =</span> <span class="fu">list</span>(</span>
+<span id="cb4-92"><a href="#cb4-92" tabindex="-1"></a>        <span class="at">type   =</span> <span class="st">&quot;duckdb&quot;</span>,</span>
+<span id="cb4-93"><a href="#cb4-93" tabindex="-1"></a>        <span class="at">query  =</span> polygon_query,</span>
+<span id="cb4-94"><a href="#cb4-94" tabindex="-1"></a>        <span class="at">format =</span> <span class="st">&quot;geoarrow&quot;</span></span>
+<span id="cb4-95"><a href="#cb4-95" tabindex="-1"></a>      ),</span>
+<span id="cb4-96"><a href="#cb4-96" tabindex="-1"></a>      <span class="at">geometryColumn     =</span> <span class="st">&quot;geometry&quot;</span>,</span>
+<span id="cb4-97"><a href="#cb4-97" tabindex="-1"></a>      <span class="at">getFillColor       =</span> <span class="fu">c</span>(<span class="dv">100</span><span class="dt">L</span>, <span class="dv">80</span><span class="dt">L</span>, <span class="dv">220</span><span class="dt">L</span>, <span class="dv">100</span><span class="dt">L</span>),</span>
+<span id="cb4-98"><a href="#cb4-98" tabindex="-1"></a>      <span class="at">stroked            =</span> <span class="cn">FALSE</span>,</span>
+<span id="cb4-99"><a href="#cb4-99" tabindex="-1"></a>      <span class="at">coordinateSystem   =</span> <span class="st">&quot;@@#COORDINATE_SYSTEM.CARTESIAN&quot;</span>,</span>
+<span id="cb4-100"><a href="#cb4-100" tabindex="-1"></a>      <span class="at">positionFormat     =</span> <span class="st">&quot;XY&quot;</span>,</span>
+<span id="cb4-101"><a href="#cb4-101" tabindex="-1"></a>      <span class="at">pickable           =</span> <span class="cn">TRUE</span></span>
+<span id="cb4-102"><a href="#cb4-102" tabindex="-1"></a>    ),</span>
+<span id="cb4-103"><a href="#cb4-103" tabindex="-1"></a>    <span class="fu">list</span>(</span>
+<span id="cb4-104"><a href="#cb4-104" tabindex="-1"></a>      <span class="st">`</span><span class="at">@@type</span><span class="st">`</span>         <span class="ot">=</span> <span class="st">&quot;ScatterplotLayer&quot;</span>,</span>
+<span id="cb4-105"><a href="#cb4-105" tabindex="-1"></a>      <span class="at">id               =</span> <span class="st">&quot;cell-centroids&quot;</span>,</span>
+<span id="cb4-106"><a href="#cb4-106" tabindex="-1"></a>      <span class="at">data             =</span> <span class="fu">list</span>(</span>
+<span id="cb4-107"><a href="#cb4-107" tabindex="-1"></a>        <span class="at">type  =</span> <span class="st">&quot;duckdb&quot;</span>,</span>
+<span id="cb4-108"><a href="#cb4-108" tabindex="-1"></a>        <span class="at">query =</span> <span class="st">&quot;SELECT cell_ID, x, y, r, g, b FROM centroids&quot;</span></span>
+<span id="cb4-109"><a href="#cb4-109" tabindex="-1"></a>      ),</span>
+<span id="cb4-110"><a href="#cb4-110" tabindex="-1"></a>      <span class="at">getPosition      =</span> <span class="st">&quot;@@=[x, y]&quot;</span>,</span>
+<span id="cb4-111"><a href="#cb4-111" tabindex="-1"></a>      <span class="at">getFillColor     =</span> <span class="st">&quot;@@=[r, g, b]&quot;</span>,</span>
+<span id="cb4-112"><a href="#cb4-112" tabindex="-1"></a>      <span class="at">getRadius        =</span> <span class="dv">2</span>,</span>
+<span id="cb4-113"><a href="#cb4-113" tabindex="-1"></a>      <span class="at">radiusUnits      =</span> <span class="st">&quot;pixels&quot;</span>,</span>
+<span id="cb4-114"><a href="#cb4-114" tabindex="-1"></a>      <span class="at">coordinateSystem =</span> <span class="st">&quot;@@#COORDINATE_SYSTEM.CARTESIAN&quot;</span>,</span>
+<span id="cb4-115"><a href="#cb4-115" tabindex="-1"></a>      <span class="at">positionFormat   =</span> <span class="st">&quot;XY&quot;</span>,</span>
+<span id="cb4-116"><a href="#cb4-116" tabindex="-1"></a>      <span class="at">opacity          =</span> <span class="fl">0.85</span>,</span>
+<span id="cb4-117"><a href="#cb4-117" tabindex="-1"></a>      <span class="at">pickable         =</span> <span class="cn">TRUE</span></span>
+<span id="cb4-118"><a href="#cb4-118" tabindex="-1"></a>    )</span>
+<span id="cb4-119"><a href="#cb4-119" tabindex="-1"></a>  )</span>
+<span id="cb4-120"><a href="#cb4-120" tabindex="-1"></a>)</span>
+<span id="cb4-121"><a href="#cb4-121" tabindex="-1"></a></span>
+<span id="cb4-122"><a href="#cb4-122" tabindex="-1"></a>widget <span class="ot">&lt;-</span> <span class="fu">deckgl</span>(</span>
+<span id="cb4-123"><a href="#cb4-123" tabindex="-1"></a>  <span class="at">spec =</span> spec,</span>
+<span id="cb4-124"><a href="#cb4-124" tabindex="-1"></a>  <span class="at">con  =</span> con,</span>
+<span id="cb4-125"><a href="#cb4-125" tabindex="-1"></a>  <span class="at">data =</span> <span class="fu">list</span>(<span class="at">centroids =</span> centroids),</span>
+<span id="cb4-126"><a href="#cb4-126" tabindex="-1"></a>  <span class="at">width  =</span> <span class="st">&quot;100%&quot;</span>,</span>
+<span id="cb4-127"><a href="#cb4-127" tabindex="-1"></a>  <span class="at">height =</span> <span class="st">&quot;600px&quot;</span></span>
+<span id="cb4-128"><a href="#cb4-128" tabindex="-1"></a>)</span>
+<span id="cb4-129"><a href="#cb4-129" tabindex="-1"></a></span>
+<span id="cb4-130"><a href="#cb4-130" tabindex="-1"></a>DBI<span class="sc">::</span><span class="fu">dbDisconnect</span>(con)</span>
+<span id="cb4-131"><a href="#cb4-131" tabindex="-1"></a>widget</span></code></pre></div>
+</div>
+<div id="data-hydration-with-duckdb" class="section level2">
+<h2>Data Hydration with DuckDB</h2>
+<p>rDeckgl automatically creates an in-memory DuckDB database for
+efficient data handling:</p>
+<ol style="list-style-type: decimal">
+<li>Pass a named list of data.frames via the <code>data</code>
+argument</li>
+<li>Each entry becomes a DuckDB table</li>
+<li>Reference tables using <code>type = &quot;duckdb&quot;</code> and SQL queries
+in your spec</li>
+<li>Use DuckDB’s powerful SQL features for data transformation</li>
+</ol>
+</div>
+<div id="shiny-integration" class="section level2">
+<h2>Shiny Integration</h2>
+<p>Use rDeckgl in Shiny applications with reactive bindings. Here’s a
+complete working example:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a><span class="fu">library</span>(shiny)</span>
+<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a><span class="fu">library</span>(rDeckgl)</span>
+<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a><span class="fu">library</span>(scales)</span>
+<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a></span>
+<span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a>ui <span class="ot">&lt;-</span> <span class="fu">fluidPage</span>(</span>
+<span id="cb5-6"><a href="#cb5-6" tabindex="-1"></a>  <span class="fu">titlePanel</span>(<span class="st">&quot;Deck.gl in Shiny&quot;</span>),</span>
+<span id="cb5-7"><a href="#cb5-7" tabindex="-1"></a>  <span class="fu">deckglOutput</span>(<span class="st">&quot;myDeckgl&quot;</span>, <span class="at">width =</span> <span class="st">&quot;100%&quot;</span>, <span class="at">height =</span> <span class="st">&quot;600px&quot;</span>)</span>
+<span id="cb5-8"><a href="#cb5-8" tabindex="-1"></a>)</span>
+<span id="cb5-9"><a href="#cb5-9" tabindex="-1"></a></span>
+<span id="cb5-10"><a href="#cb5-10" tabindex="-1"></a>server <span class="ot">&lt;-</span> <span class="cf">function</span>(input, output, session) {</span>
+<span id="cb5-11"><a href="#cb5-11" tabindex="-1"></a>  output<span class="sc">$</span>myDeckgl <span class="ot">&lt;-</span> <span class="fu">renderDeckgl</span>({</span>
+<span id="cb5-12"><a href="#cb5-12" tabindex="-1"></a>    <span class="co"># Generate sample data</span></span>
+<span id="cb5-13"><a href="#cb5-13" tabindex="-1"></a>    <span class="fu">set.seed</span>(<span class="dv">42</span>)</span>
+<span id="cb5-14"><a href="#cb5-14" tabindex="-1"></a>    n_points <span class="ot">&lt;-</span> <span class="dv">500</span></span>
+<span id="cb5-15"><a href="#cb5-15" tabindex="-1"></a></span>
+<span id="cb5-16"><a href="#cb5-16" tabindex="-1"></a>    points_data <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb5-17"><a href="#cb5-17" tabindex="-1"></a>      <span class="at">lon =</span> <span class="fu">runif</span>(n_points, <span class="sc">-</span><span class="fl">122.5</span>, <span class="sc">-</span><span class="fl">122.3</span>),</span>
+<span id="cb5-18"><a href="#cb5-18" tabindex="-1"></a>      <span class="at">lat =</span> <span class="fu">runif</span>(n_points, <span class="fl">37.7</span>, <span class="fl">37.85</span>),</span>
+<span id="cb5-19"><a href="#cb5-19" tabindex="-1"></a>      <span class="at">value =</span> <span class="fu">rnorm</span>(n_points),</span>
+<span id="cb5-20"><a href="#cb5-20" tabindex="-1"></a>      <span class="at">radius =</span> <span class="fu">runif</span>(n_points, <span class="dv">50</span>, <span class="dv">150</span>)</span>
+<span id="cb5-21"><a href="#cb5-21" tabindex="-1"></a>    )</span>
+<span id="cb5-22"><a href="#cb5-22" tabindex="-1"></a></span>
+<span id="cb5-23"><a href="#cb5-23" tabindex="-1"></a>    <span class="co"># Add colors</span></span>
+<span id="cb5-24"><a href="#cb5-24" tabindex="-1"></a>    palette_fun <span class="ot">&lt;-</span> <span class="fu">col_numeric</span>(<span class="fu">viridis_pal</span>(<span class="at">option =</span> <span class="st">&quot;B&quot;</span>)(<span class="dv">256</span>), <span class="fu">range</span>(points_data<span class="sc">$</span>value))</span>
+<span id="cb5-25"><a href="#cb5-25" tabindex="-1"></a>    rgba <span class="ot">&lt;-</span> <span class="fu">col2rgb</span>(<span class="fu">palette_fun</span>(points_data<span class="sc">$</span>value))</span>
+<span id="cb5-26"><a href="#cb5-26" tabindex="-1"></a>    points_data<span class="sc">$</span>color_r <span class="ot">&lt;-</span> rgba[<span class="dv">1</span>, ]</span>
+<span id="cb5-27"><a href="#cb5-27" tabindex="-1"></a>    points_data<span class="sc">$</span>color_g <span class="ot">&lt;-</span> rgba[<span class="dv">2</span>, ]</span>
+<span id="cb5-28"><a href="#cb5-28" tabindex="-1"></a>    points_data<span class="sc">$</span>color_b <span class="ot">&lt;-</span> rgba[<span class="dv">3</span>, ]</span>
+<span id="cb5-29"><a href="#cb5-29" tabindex="-1"></a></span>
+<span id="cb5-30"><a href="#cb5-30" tabindex="-1"></a>    <span class="co"># Create spec</span></span>
+<span id="cb5-31"><a href="#cb5-31" tabindex="-1"></a>    spec <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
+<span id="cb5-32"><a href="#cb5-32" tabindex="-1"></a>      <span class="st">`</span><span class="at">@@type</span><span class="st">`</span> <span class="ot">=</span> <span class="st">&quot;DeckGL&quot;</span>,</span>
+<span id="cb5-33"><a href="#cb5-33" tabindex="-1"></a>      <span class="at">initialViewState =</span> <span class="fu">list</span>(</span>
+<span id="cb5-34"><a href="#cb5-34" tabindex="-1"></a>        <span class="at">longitude =</span> <span class="sc">-</span><span class="fl">122.4</span>,</span>
+<span id="cb5-35"><a href="#cb5-35" tabindex="-1"></a>        <span class="at">latitude =</span> <span class="fl">37.78</span>,</span>
+<span id="cb5-36"><a href="#cb5-36" tabindex="-1"></a>        <span class="at">zoom =</span> <span class="dv">11</span>,</span>
+<span id="cb5-37"><a href="#cb5-37" tabindex="-1"></a>        <span class="at">pitch =</span> <span class="dv">0</span>,</span>
+<span id="cb5-38"><a href="#cb5-38" tabindex="-1"></a>        <span class="at">bearing =</span> <span class="dv">0</span></span>
+<span id="cb5-39"><a href="#cb5-39" tabindex="-1"></a>      ),</span>
+<span id="cb5-40"><a href="#cb5-40" tabindex="-1"></a>      <span class="at">views =</span> <span class="fu">list</span>(</span>
+<span id="cb5-41"><a href="#cb5-41" tabindex="-1"></a>        <span class="fu">list</span>(</span>
+<span id="cb5-42"><a href="#cb5-42" tabindex="-1"></a>          <span class="st">`</span><span class="at">@@type</span><span class="st">`</span> <span class="ot">=</span> <span class="st">&quot;MapView&quot;</span>,</span>
+<span id="cb5-43"><a href="#cb5-43" tabindex="-1"></a>          <span class="at">controller =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb5-44"><a href="#cb5-44" tabindex="-1"></a>          <span class="at">mapStyle =</span> <span class="st">&quot;https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json&quot;</span></span>
+<span id="cb5-45"><a href="#cb5-45" tabindex="-1"></a>        )</span>
+<span id="cb5-46"><a href="#cb5-46" tabindex="-1"></a>      ),</span>
+<span id="cb5-47"><a href="#cb5-47" tabindex="-1"></a>      <span class="at">layers =</span> <span class="fu">list</span>(</span>
+<span id="cb5-48"><a href="#cb5-48" tabindex="-1"></a>        <span class="fu">list</span>(</span>
+<span id="cb5-49"><a href="#cb5-49" tabindex="-1"></a>          <span class="st">`</span><span class="at">@@type</span><span class="st">`</span> <span class="ot">=</span> <span class="st">&quot;ScatterplotLayer&quot;</span>,</span>
+<span id="cb5-50"><a href="#cb5-50" tabindex="-1"></a>          <span class="at">id =</span> <span class="st">&quot;points&quot;</span>,</span>
+<span id="cb5-51"><a href="#cb5-51" tabindex="-1"></a>          <span class="at">data =</span> <span class="fu">list</span>(</span>
+<span id="cb5-52"><a href="#cb5-52" tabindex="-1"></a>            <span class="at">type =</span> <span class="st">&quot;duckdb&quot;</span>,</span>
+<span id="cb5-53"><a href="#cb5-53" tabindex="-1"></a>            <span class="at">query =</span> <span class="st">&quot;SELECT lon, lat, radius, color_r, color_g, color_b FROM points&quot;</span></span>
+<span id="cb5-54"><a href="#cb5-54" tabindex="-1"></a>          ),</span>
+<span id="cb5-55"><a href="#cb5-55" tabindex="-1"></a>          <span class="at">getPosition =</span> <span class="st">&quot;@@=[lon, lat]&quot;</span>,</span>
+<span id="cb5-56"><a href="#cb5-56" tabindex="-1"></a>          <span class="at">getRadius =</span> <span class="st">&quot;@@=radius&quot;</span>,</span>
+<span id="cb5-57"><a href="#cb5-57" tabindex="-1"></a>          <span class="at">getFillColor =</span> <span class="st">&quot;@@=[color_r, color_g, color_b, 180]&quot;</span>,</span>
+<span id="cb5-58"><a href="#cb5-58" tabindex="-1"></a>          <span class="at">pickable =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb5-59"><a href="#cb5-59" tabindex="-1"></a>          <span class="at">radiusUnits =</span> <span class="st">&quot;meters&quot;</span></span>
+<span id="cb5-60"><a href="#cb5-60" tabindex="-1"></a>        )</span>
+<span id="cb5-61"><a href="#cb5-61" tabindex="-1"></a>      )</span>
+<span id="cb5-62"><a href="#cb5-62" tabindex="-1"></a>    )</span>
+<span id="cb5-63"><a href="#cb5-63" tabindex="-1"></a></span>
+<span id="cb5-64"><a href="#cb5-64" tabindex="-1"></a>    <span class="fu">deckgl</span>(<span class="at">spec =</span> spec, <span class="at">data =</span> <span class="fu">list</span>(<span class="at">points =</span> points_data))</span>
+<span id="cb5-65"><a href="#cb5-65" tabindex="-1"></a>  })</span>
+<span id="cb5-66"><a href="#cb5-66" tabindex="-1"></a>}</span>
+<span id="cb5-67"><a href="#cb5-67" tabindex="-1"></a></span>
+<span id="cb5-68"><a href="#cb5-68" tabindex="-1"></a><span class="fu">shinyApp</span>(ui, server)</span></code></pre></div>
+<p><strong>Note:</strong> This example generates data within the server
+function. For reactive/dynamic visualizations, wrap your data generation
+in <code>reactive()</code> and use <code>observe()</code> or
+<code>observeEvent()</code> to update the visualization based on user
+input.</p>
+</div>
+<div id="geoarrow-examples" class="section level2">
+<h2>GeoArrow examples</h2>
+<p>The following self-contained scripts mirror our internal GeoArrow
+tests. Copy them into your own session—no local <code>Examples/</code>
+folder required.</p>
+<div id="geoarrow-scatterplot-points" class="section level3">
+<h3>GeoArrow scatterplot (points)</h3>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a><span class="fu">library</span>(rDeckgl)</span>
+<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a></span>
+<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">42</span>)</span>
+<span id="cb6-4"><a href="#cb6-4" tabindex="-1"></a>n_points <span class="ot">&lt;-</span> <span class="dv">1000</span></span>
+<span id="cb6-5"><a href="#cb6-5" tabindex="-1"></a></span>
+<span id="cb6-6"><a href="#cb6-6" tabindex="-1"></a>points_data <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb6-7"><a href="#cb6-7" tabindex="-1"></a>  <span class="at">id =</span> <span class="dv">1</span><span class="sc">:</span>n_points,</span>
+<span id="cb6-8"><a href="#cb6-8" tabindex="-1"></a>  <span class="at">lon =</span> <span class="fu">runif</span>(n_points, <span class="sc">-</span><span class="fl">122.5</span>, <span class="sc">-</span><span class="fl">122.3</span>),</span>
+<span id="cb6-9"><a href="#cb6-9" tabindex="-1"></a>  <span class="at">lat =</span> <span class="fu">runif</span>(n_points, <span class="fl">37.7</span>, <span class="fl">37.85</span>),</span>
+<span id="cb6-10"><a href="#cb6-10" tabindex="-1"></a>  <span class="at">value =</span> <span class="fu">rnorm</span>(n_points, <span class="at">mean =</span> <span class="fl">0.5</span>, <span class="at">sd =</span> <span class="fl">0.3</span>),</span>
+<span id="cb6-11"><a href="#cb6-11" tabindex="-1"></a>  <span class="at">radius =</span> <span class="fu">runif</span>(n_points, <span class="dv">50</span>, <span class="dv">200</span>)</span>
+<span id="cb6-12"><a href="#cb6-12" tabindex="-1"></a>)</span>
+<span id="cb6-13"><a href="#cb6-13" tabindex="-1"></a></span>
+<span id="cb6-14"><a href="#cb6-14" tabindex="-1"></a>points_data<span class="sc">$</span>value <span class="ot">&lt;-</span> <span class="fu">pmax</span>(<span class="dv">0</span>, <span class="fu">pmin</span>(<span class="dv">1</span>, points_data<span class="sc">$</span>value))</span>
+<span id="cb6-15"><a href="#cb6-15" tabindex="-1"></a></span>
+<span id="cb6-16"><a href="#cb6-16" tabindex="-1"></a>spec <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
+<span id="cb6-17"><a href="#cb6-17" tabindex="-1"></a>  <span class="st">`</span><span class="at">@@type</span><span class="st">`</span> <span class="ot">=</span> <span class="st">&quot;DeckGL&quot;</span>,</span>
+<span id="cb6-18"><a href="#cb6-18" tabindex="-1"></a>  <span class="at">initialViewState =</span> <span class="fu">list</span>(</span>
+<span id="cb6-19"><a href="#cb6-19" tabindex="-1"></a>    <span class="at">longitude =</span> <span class="sc">-</span><span class="fl">122.4</span>,</span>
+<span id="cb6-20"><a href="#cb6-20" tabindex="-1"></a>    <span class="at">latitude =</span> <span class="fl">37.78</span>,</span>
+<span id="cb6-21"><a href="#cb6-21" tabindex="-1"></a>    <span class="at">zoom =</span> <span class="dv">12</span>,</span>
+<span id="cb6-22"><a href="#cb6-22" tabindex="-1"></a>    <span class="at">pitch =</span> <span class="dv">0</span>,</span>
+<span id="cb6-23"><a href="#cb6-23" tabindex="-1"></a>    <span class="at">bearing =</span> <span class="dv">0</span></span>
+<span id="cb6-24"><a href="#cb6-24" tabindex="-1"></a>  ),</span>
+<span id="cb6-25"><a href="#cb6-25" tabindex="-1"></a>  <span class="at">views =</span> <span class="fu">list</span>(</span>
+<span id="cb6-26"><a href="#cb6-26" tabindex="-1"></a>    <span class="fu">list</span>(</span>
+<span id="cb6-27"><a href="#cb6-27" tabindex="-1"></a>      <span class="st">`</span><span class="at">@@type</span><span class="st">`</span> <span class="ot">=</span> <span class="st">&quot;MapView&quot;</span>,</span>
+<span id="cb6-28"><a href="#cb6-28" tabindex="-1"></a>      <span class="at">controller =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb6-29"><a href="#cb6-29" tabindex="-1"></a>      <span class="at">mapStyle =</span> <span class="st">&quot;https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json&quot;</span></span>
+<span id="cb6-30"><a href="#cb6-30" tabindex="-1"></a>    )</span>
+<span id="cb6-31"><a href="#cb6-31" tabindex="-1"></a>  ),</span>
+<span id="cb6-32"><a href="#cb6-32" tabindex="-1"></a>  <span class="at">layers =</span> <span class="fu">list</span>(</span>
+<span id="cb6-33"><a href="#cb6-33" tabindex="-1"></a>    <span class="fu">list</span>(</span>
+<span id="cb6-34"><a href="#cb6-34" tabindex="-1"></a>      <span class="st">`</span><span class="at">@@type</span><span class="st">`</span> <span class="ot">=</span> <span class="st">&quot;ScatterplotLayer&quot;</span>,</span>
+<span id="cb6-35"><a href="#cb6-35" tabindex="-1"></a>      <span class="at">id =</span> <span class="st">&quot;points&quot;</span>,</span>
+<span id="cb6-36"><a href="#cb6-36" tabindex="-1"></a>      <span class="at">data =</span> <span class="fu">list</span>(</span>
+<span id="cb6-37"><a href="#cb6-37" tabindex="-1"></a>        <span class="at">type =</span> <span class="st">&quot;duckdb&quot;</span>,</span>
+<span id="cb6-38"><a href="#cb6-38" tabindex="-1"></a>        <span class="at">query =</span> <span class="st">&quot;SELECT id, lon, lat, value, radius FROM points_data&quot;</span></span>
+<span id="cb6-39"><a href="#cb6-39" tabindex="-1"></a>      ),</span>
+<span id="cb6-40"><a href="#cb6-40" tabindex="-1"></a>      <span class="at">getPosition =</span> <span class="st">&quot;@@=[lon, lat]&quot;</span>,</span>
+<span id="cb6-41"><a href="#cb6-41" tabindex="-1"></a>      <span class="at">getRadius =</span> <span class="st">&quot;@@=radius&quot;</span>,</span>
+<span id="cb6-42"><a href="#cb6-42" tabindex="-1"></a>      <span class="at">getFillColor =</span> <span class="st">&quot;@@=[value * 255, (1 - value) * 255, 100, 200]&quot;</span>,</span>
+<span id="cb6-43"><a href="#cb6-43" tabindex="-1"></a>      <span class="at">radiusUnits =</span> <span class="st">&quot;meters&quot;</span>,</span>
+<span id="cb6-44"><a href="#cb6-44" tabindex="-1"></a>      <span class="at">pickable =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb6-45"><a href="#cb6-45" tabindex="-1"></a>      <span class="at">autoHighlight =</span> <span class="cn">TRUE</span></span>
+<span id="cb6-46"><a href="#cb6-46" tabindex="-1"></a>    )</span>
+<span id="cb6-47"><a href="#cb6-47" tabindex="-1"></a>  )</span>
+<span id="cb6-48"><a href="#cb6-48" tabindex="-1"></a>)</span>
+<span id="cb6-49"><a href="#cb6-49" tabindex="-1"></a></span>
+<span id="cb6-50"><a href="#cb6-50" tabindex="-1"></a><span class="fu">deckgl</span>(</span>
+<span id="cb6-51"><a href="#cb6-51" tabindex="-1"></a>  <span class="at">spec =</span> spec,</span>
+<span id="cb6-52"><a href="#cb6-52" tabindex="-1"></a>  <span class="at">data =</span> <span class="fu">list</span>(<span class="at">points_data =</span> points_data),</span>
+<span id="cb6-53"><a href="#cb6-53" tabindex="-1"></a>  <span class="at">width =</span> <span class="st">&quot;100%&quot;</span>,</span>
+<span id="cb6-54"><a href="#cb6-54" tabindex="-1"></a>  <span class="at">height =</span> <span class="st">&quot;600px&quot;</span></span>
+<span id="cb6-55"><a href="#cb6-55" tabindex="-1"></a>)</span></code></pre></div>
+</div>
+<div id="utah-building-footprints-geoarrow" class="section level3">
+<h3>Utah building footprints (GeoArrow)</h3>
+<p>This script renders the Utah portion of the <a href="https://github.com/microsoft/USBuildingFootprints">Microsoft
+USBuildingFootprints</a> dataset as GeoArrow polygons. Create a
+GeoParquet with GeoArrow-encoded geometries from the upstream ZIP:</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="ex">ogr2ogr</span> <span class="dt">\</span></span>
+<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a>  Utah.parquet <span class="dt">\</span></span>
+<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a>  /vsizip/Utah.geojson.zip <span class="dt">\</span></span>
+<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a>  <span class="at">-dialect</span> SQLite <span class="dt">\</span></span>
+<span id="cb7-5"><a href="#cb7-5" tabindex="-1"></a>  <span class="at">-sql</span> <span class="st">&quot;SELECT geometry FROM &#39;Utah.geojson&#39;&quot;</span> <span class="dt">\</span></span>
+<span id="cb7-6"><a href="#cb7-6" tabindex="-1"></a>  <span class="at">-lco</span> COMPRESSION=BROTLI <span class="dt">\</span></span>
+<span id="cb7-7"><a href="#cb7-7" tabindex="-1"></a>  <span class="at">-lco</span> GEOMETRY_ENCODING=GEOARROW <span class="dt">\</span></span>
+<span id="cb7-8"><a href="#cb7-8" tabindex="-1"></a>  <span class="at">-lco</span> POLYGON_ORIENTATION=COUNTERCLOCKWISE <span class="dt">\</span></span>
+<span id="cb7-9"><a href="#cb7-9" tabindex="-1"></a>  <span class="at">-lco</span> ROW_GROUP_SIZE=9999999</span></code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a><span class="fu">library</span>(rDeckgl)</span>
+<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a><span class="fu">library</span>(arrow)</span>
+<span id="cb8-3"><a href="#cb8-3" tabindex="-1"></a></span>
+<span id="cb8-4"><a href="#cb8-4" tabindex="-1"></a>parquet_path <span class="ot">&lt;-</span> <span class="st">&quot;Utah.parquet&quot;</span></span>
+<span id="cb8-5"><a href="#cb8-5" tabindex="-1"></a></span>
+<span id="cb8-6"><a href="#cb8-6" tabindex="-1"></a><span class="cf">if</span> (<span class="sc">!</span><span class="fu">file.exists</span>(parquet_path)) {</span>
+<span id="cb8-7"><a href="#cb8-7" tabindex="-1"></a>  <span class="fu">stop</span>(<span class="st">&quot;Parquet file not found: &quot;</span>, parquet_path)</span>
+<span id="cb8-8"><a href="#cb8-8" tabindex="-1"></a>}</span>
+<span id="cb8-9"><a href="#cb8-9" tabindex="-1"></a></span>
+<span id="cb8-10"><a href="#cb8-10" tabindex="-1"></a>parquet_data <span class="ot">&lt;-</span> arrow<span class="sc">::</span><span class="fu">read_parquet</span>(parquet_path)</span>
+<span id="cb8-11"><a href="#cb8-11" tabindex="-1"></a></span>
+<span id="cb8-12"><a href="#cb8-12" tabindex="-1"></a>max_rows <span class="ot">&lt;-</span> <span class="dv">1000000</span></span>
+<span id="cb8-13"><a href="#cb8-13" tabindex="-1"></a>sample_data <span class="ot">&lt;-</span> <span class="cf">if</span> (<span class="fu">nrow</span>(parquet_data) <span class="sc">&gt;</span> max_rows) {</span>
+<span id="cb8-14"><a href="#cb8-14" tabindex="-1"></a>  <span class="fu">head</span>(parquet_data, max_rows)</span>
+<span id="cb8-15"><a href="#cb8-15" tabindex="-1"></a>} <span class="cf">else</span> {</span>
+<span id="cb8-16"><a href="#cb8-16" tabindex="-1"></a>  parquet_data</span>
+<span id="cb8-17"><a href="#cb8-17" tabindex="-1"></a>}</span>
+<span id="cb8-18"><a href="#cb8-18" tabindex="-1"></a></span>
+<span id="cb8-19"><a href="#cb8-19" tabindex="-1"></a><span class="co"># Locate the densest cluster of buildings to centre the initial view</span></span>
+<span id="cb8-20"><a href="#cb8-20" tabindex="-1"></a>bbox_data <span class="ot">&lt;-</span> sample_data<span class="sc">$</span>GEOMETRY_bbox</span>
+<span id="cb8-21"><a href="#cb8-21" tabindex="-1"></a><span class="cf">if</span> (<span class="sc">!</span><span class="fu">is.null</span>(bbox_data)) {</span>
+<span id="cb8-22"><a href="#cb8-22" tabindex="-1"></a>  cx <span class="ot">&lt;-</span> (<span class="fu">as.numeric</span>(bbox_data<span class="sc">$</span>xmin) <span class="sc">+</span> <span class="fu">as.numeric</span>(bbox_data<span class="sc">$</span>xmax)) <span class="sc">/</span> <span class="dv">2</span></span>
+<span id="cb8-23"><a href="#cb8-23" tabindex="-1"></a>  cy <span class="ot">&lt;-</span> (<span class="fu">as.numeric</span>(bbox_data<span class="sc">$</span>ymin) <span class="sc">+</span> <span class="fu">as.numeric</span>(bbox_data<span class="sc">$</span>ymax)) <span class="sc">/</span> <span class="dv">2</span></span>
+<span id="cb8-24"><a href="#cb8-24" tabindex="-1"></a></span>
+<span id="cb8-25"><a href="#cb8-25" tabindex="-1"></a>  grid_key     <span class="ot">&lt;-</span> <span class="fu">paste</span>(<span class="fu">floor</span>(cx <span class="sc">/</span> <span class="fl">0.1</span>), <span class="fu">floor</span>(cy <span class="sc">/</span> <span class="fl">0.1</span>), <span class="at">sep =</span> <span class="st">&quot;,&quot;</span>)</span>
+<span id="cb8-26"><a href="#cb8-26" tabindex="-1"></a>  densest_cell <span class="ot">&lt;-</span> <span class="fu">names</span>(<span class="fu">which.max</span>(<span class="fu">table</span>(grid_key)))</span>
+<span id="cb8-27"><a href="#cb8-27" tabindex="-1"></a>  idx          <span class="ot">&lt;-</span> <span class="fu">which</span>(grid_key <span class="sc">==</span> densest_cell)</span>
+<span id="cb8-28"><a href="#cb8-28" tabindex="-1"></a></span>
+<span id="cb8-29"><a href="#cb8-29" tabindex="-1"></a>  center_lon <span class="ot">&lt;-</span> <span class="fu">mean</span>(cx[idx], <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb8-30"><a href="#cb8-30" tabindex="-1"></a>  center_lat <span class="ot">&lt;-</span> <span class="fu">mean</span>(cy[idx], <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb8-31"><a href="#cb8-31" tabindex="-1"></a>} <span class="cf">else</span> {</span>
+<span id="cb8-32"><a href="#cb8-32" tabindex="-1"></a>  center_lon <span class="ot">&lt;-</span> <span class="sc">-</span><span class="fl">110.4144</span></span>
+<span id="cb8-33"><a href="#cb8-33" tabindex="-1"></a>  center_lat <span class="ot">&lt;-</span>   <span class="fl">39.4991</span></span>
+<span id="cb8-34"><a href="#cb8-34" tabindex="-1"></a>}</span>
+<span id="cb8-35"><a href="#cb8-35" tabindex="-1"></a></span>
+<span id="cb8-36"><a href="#cb8-36" tabindex="-1"></a><span class="co"># Encode the Arrow table as base64 IPC for inline delivery</span></span>
+<span id="cb8-37"><a href="#cb8-37" tabindex="-1"></a>arrow_table <span class="ot">&lt;-</span> arrow<span class="sc">::</span><span class="fu">arrow_table</span>(sample_data)</span>
+<span id="cb8-38"><a href="#cb8-38" tabindex="-1"></a>temp_file   <span class="ot">&lt;-</span> <span class="fu">tempfile</span>(<span class="at">fileext =</span> <span class="st">&quot;.arrows&quot;</span>)</span>
+<span id="cb8-39"><a href="#cb8-39" tabindex="-1"></a>arrow<span class="sc">::</span><span class="fu">write_ipc_stream</span>(arrow_table, temp_file)</span>
+<span id="cb8-40"><a href="#cb8-40" tabindex="-1"></a>arrow_bytes <span class="ot">&lt;-</span> <span class="fu">readBin</span>(temp_file, <span class="st">&quot;raw&quot;</span>, <span class="at">n =</span> <span class="fu">file.info</span>(temp_file)<span class="sc">$</span>size)</span>
+<span id="cb8-41"><a href="#cb8-41" tabindex="-1"></a><span class="fu">unlink</span>(temp_file)</span>
+<span id="cb8-42"><a href="#cb8-42" tabindex="-1"></a>arrow_b64 <span class="ot">&lt;-</span> base64enc<span class="sc">::</span><span class="fu">base64encode</span>(arrow_bytes)</span>
+<span id="cb8-43"><a href="#cb8-43" tabindex="-1"></a></span>
+<span id="cb8-44"><a href="#cb8-44" tabindex="-1"></a><span class="cf">if</span> (<span class="fu">length</span>(arrow_bytes) <span class="sc">/</span> <span class="dv">1024</span> <span class="sc">/</span> <span class="dv">1024</span> <span class="sc">&gt;</span> <span class="dv">50</span>) {</span>
+<span id="cb8-45"><a href="#cb8-45" tabindex="-1"></a>  <span class="fu">warning</span>(<span class="st">&quot;Encoded payload exceeds 50 MB and may cause browser issues.&quot;</span>)</span>
+<span id="cb8-46"><a href="#cb8-46" tabindex="-1"></a>}</span>
+<span id="cb8-47"><a href="#cb8-47" tabindex="-1"></a></span>
+<span id="cb8-48"><a href="#cb8-48" tabindex="-1"></a>spec <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
+<span id="cb8-49"><a href="#cb8-49" tabindex="-1"></a>  <span class="st">`</span><span class="at">@@type</span><span class="st">`</span> <span class="ot">=</span> <span class="st">&quot;DeckGL&quot;</span>,</span>
+<span id="cb8-50"><a href="#cb8-50" tabindex="-1"></a>  <span class="at">width =</span> <span class="dv">1024</span>,</span>
+<span id="cb8-51"><a href="#cb8-51" tabindex="-1"></a>  <span class="at">height =</span> <span class="dv">768</span>,</span>
+<span id="cb8-52"><a href="#cb8-52" tabindex="-1"></a>  <span class="at">initialViewState =</span> <span class="fu">list</span>(</span>
+<span id="cb8-53"><a href="#cb8-53" tabindex="-1"></a>    <span class="at">longitude =</span> center_lon,</span>
+<span id="cb8-54"><a href="#cb8-54" tabindex="-1"></a>    <span class="at">latitude  =</span> center_lat,</span>
+<span id="cb8-55"><a href="#cb8-55" tabindex="-1"></a>    <span class="at">zoom      =</span> <span class="dv">12</span>,</span>
+<span id="cb8-56"><a href="#cb8-56" tabindex="-1"></a>    <span class="at">pitch     =</span> <span class="dv">0</span>,</span>
+<span id="cb8-57"><a href="#cb8-57" tabindex="-1"></a>    <span class="at">bearing   =</span> <span class="dv">0</span></span>
+<span id="cb8-58"><a href="#cb8-58" tabindex="-1"></a>  ),</span>
+<span id="cb8-59"><a href="#cb8-59" tabindex="-1"></a>  <span class="at">controller =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb8-60"><a href="#cb8-60" tabindex="-1"></a>  <span class="at">layers =</span> <span class="fu">list</span>(</span>
+<span id="cb8-61"><a href="#cb8-61" tabindex="-1"></a>    <span class="fu">list</span>(</span>
+<span id="cb8-62"><a href="#cb8-62" tabindex="-1"></a>      <span class="st">`</span><span class="at">@@type</span><span class="st">`</span>       <span class="ot">=</span> <span class="st">&quot;GeoArrowSolidPolygonLayer&quot;</span>,</span>
+<span id="cb8-63"><a href="#cb8-63" tabindex="-1"></a>      <span class="at">id             =</span> <span class="st">&quot;utah-buildings&quot;</span>,</span>
+<span id="cb8-64"><a href="#cb8-64" tabindex="-1"></a>      <span class="at">data           =</span> <span class="fu">list</span>(<span class="st">`</span><span class="at">__arrow</span><span class="st">`</span> <span class="ot">=</span> arrow_b64),</span>
+<span id="cb8-65"><a href="#cb8-65" tabindex="-1"></a>      <span class="at">geometryColumn =</span> <span class="st">&quot;GEOMETRY&quot;</span>,</span>
+<span id="cb8-66"><a href="#cb8-66" tabindex="-1"></a>      <span class="at">getFillColor   =</span> <span class="fu">c</span>(<span class="dv">255</span>, <span class="dv">100</span>, <span class="dv">0</span>, <span class="dv">200</span>),</span>
+<span id="cb8-67"><a href="#cb8-67" tabindex="-1"></a>      <span class="at">extruded       =</span> <span class="cn">FALSE</span>,</span>
+<span id="cb8-68"><a href="#cb8-68" tabindex="-1"></a>      <span class="at">pickable       =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb8-69"><a href="#cb8-69" tabindex="-1"></a>      <span class="st">`</span><span class="at">_normalize</span><span class="st">`</span>   <span class="ot">=</span> <span class="cn">FALSE</span>,</span>
+<span id="cb8-70"><a href="#cb8-70" tabindex="-1"></a>      <span class="st">`</span><span class="at">_windingOrder</span><span class="st">`</span> <span class="ot">=</span> <span class="st">&quot;CCW&quot;</span></span>
+<span id="cb8-71"><a href="#cb8-71" tabindex="-1"></a>    )</span>
+<span id="cb8-72"><a href="#cb8-72" tabindex="-1"></a>  )</span>
+<span id="cb8-73"><a href="#cb8-73" tabindex="-1"></a>)</span>
+<span id="cb8-74"><a href="#cb8-74" tabindex="-1"></a></span>
+<span id="cb8-75"><a href="#cb8-75" tabindex="-1"></a><span class="fu">deckgl</span>(<span class="at">spec =</span> spec, <span class="at">width =</span> <span class="dv">1024</span>, <span class="at">height =</span> <span class="dv">768</span>)</span></code></pre></div>
+</div>
+<div id="native-geoarrow-in-shiny-no-binary-conversion" class="section level3">
+<h3>Native GeoArrow in Shiny (no binary conversion)</h3>
+<p>This example demonstrates rendering GeoArrow polygons in Shiny using
+the native <code>GeoArrowPolygonLayer</code>, which passes Arrow tables
+directly to the layer without converting to binary format:</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a><span class="fu">library</span>(shiny)</span>
+<span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a><span class="fu">library</span>(rDeckgl)</span>
+<span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a><span class="fu">library</span>(arrow)</span>
+<span id="cb9-4"><a href="#cb9-4" tabindex="-1"></a></span>
+<span id="cb9-5"><a href="#cb9-5" tabindex="-1"></a><span class="co"># Prepare the data file</span></span>
+<span id="cb9-6"><a href="#cb9-6" tabindex="-1"></a>parquet_path <span class="ot">&lt;-</span> <span class="st">&quot;Utah.parquet&quot;</span></span>
+<span id="cb9-7"><a href="#cb9-7" tabindex="-1"></a></span>
+<span id="cb9-8"><a href="#cb9-8" tabindex="-1"></a><span class="cf">if</span> (<span class="sc">!</span><span class="fu">file.exists</span>(parquet_path)) {</span>
+<span id="cb9-9"><a href="#cb9-9" tabindex="-1"></a>  <span class="fu">stop</span>(<span class="st">&quot;Parquet file not found: &quot;</span>, parquet_path)</span>
+<span id="cb9-10"><a href="#cb9-10" tabindex="-1"></a>}</span>
+<span id="cb9-11"><a href="#cb9-11" tabindex="-1"></a></span>
+<span id="cb9-12"><a href="#cb9-12" tabindex="-1"></a><span class="co"># Read Parquet and create Arrow IPC file</span></span>
+<span id="cb9-13"><a href="#cb9-13" tabindex="-1"></a>parquet_data <span class="ot">&lt;-</span> arrow<span class="sc">::</span><span class="fu">read_parquet</span>(parquet_path)</span>
+<span id="cb9-14"><a href="#cb9-14" tabindex="-1"></a></span>
+<span id="cb9-15"><a href="#cb9-15" tabindex="-1"></a><span class="co"># Sample for reasonable performance</span></span>
+<span id="cb9-16"><a href="#cb9-16" tabindex="-1"></a>max_rows <span class="ot">&lt;-</span> <span class="dv">1000000</span></span>
+<span id="cb9-17"><a href="#cb9-17" tabindex="-1"></a><span class="cf">if</span> (<span class="fu">nrow</span>(parquet_data) <span class="sc">&gt;</span> max_rows) {</span>
+<span id="cb9-18"><a href="#cb9-18" tabindex="-1"></a>  sample_data <span class="ot">&lt;-</span> <span class="fu">head</span>(parquet_data, max_rows)</span>
+<span id="cb9-19"><a href="#cb9-19" tabindex="-1"></a>} <span class="cf">else</span> {</span>
+<span id="cb9-20"><a href="#cb9-20" tabindex="-1"></a>  sample_data <span class="ot">&lt;-</span> parquet_data</span>
+<span id="cb9-21"><a href="#cb9-21" tabindex="-1"></a>}</span>
+<span id="cb9-22"><a href="#cb9-22" tabindex="-1"></a></span>
+<span id="cb9-23"><a href="#cb9-23" tabindex="-1"></a><span class="co"># Compute density-based center</span></span>
+<span id="cb9-24"><a href="#cb9-24" tabindex="-1"></a>bbox_data <span class="ot">&lt;-</span> sample_data<span class="sc">$</span>GEOMETRY_bbox</span>
+<span id="cb9-25"><a href="#cb9-25" tabindex="-1"></a><span class="cf">if</span> (<span class="sc">!</span><span class="fu">is.null</span>(bbox_data)) {</span>
+<span id="cb9-26"><a href="#cb9-26" tabindex="-1"></a>  xmin <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(bbox_data<span class="sc">$</span>xmin)</span>
+<span id="cb9-27"><a href="#cb9-27" tabindex="-1"></a>  xmax <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(bbox_data<span class="sc">$</span>xmax)</span>
+<span id="cb9-28"><a href="#cb9-28" tabindex="-1"></a>  ymin <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(bbox_data<span class="sc">$</span>ymin)</span>
+<span id="cb9-29"><a href="#cb9-29" tabindex="-1"></a>  ymax <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(bbox_data<span class="sc">$</span>ymax)</span>
+<span id="cb9-30"><a href="#cb9-30" tabindex="-1"></a></span>
+<span id="cb9-31"><a href="#cb9-31" tabindex="-1"></a>  cx <span class="ot">&lt;-</span> (xmin <span class="sc">+</span> xmax) <span class="sc">/</span> <span class="dv">2</span></span>
+<span id="cb9-32"><a href="#cb9-32" tabindex="-1"></a>  cy <span class="ot">&lt;-</span> (ymin <span class="sc">+</span> ymax) <span class="sc">/</span> <span class="dv">2</span></span>
+<span id="cb9-33"><a href="#cb9-33" tabindex="-1"></a></span>
+<span id="cb9-34"><a href="#cb9-34" tabindex="-1"></a>  grid_size <span class="ot">&lt;-</span> <span class="fl">0.1</span></span>
+<span id="cb9-35"><a href="#cb9-35" tabindex="-1"></a>  grid_x <span class="ot">&lt;-</span> <span class="fu">floor</span>(cx <span class="sc">/</span> grid_size)</span>
+<span id="cb9-36"><a href="#cb9-36" tabindex="-1"></a>  grid_y <span class="ot">&lt;-</span> <span class="fu">floor</span>(cy <span class="sc">/</span> grid_size)</span>
+<span id="cb9-37"><a href="#cb9-37" tabindex="-1"></a>  grid_key <span class="ot">&lt;-</span> <span class="fu">paste</span>(grid_x, grid_y, <span class="at">sep =</span> <span class="st">&quot;,&quot;</span>)</span>
+<span id="cb9-38"><a href="#cb9-38" tabindex="-1"></a></span>
+<span id="cb9-39"><a href="#cb9-39" tabindex="-1"></a>  grid_counts <span class="ot">&lt;-</span> <span class="fu">table</span>(grid_key)</span>
+<span id="cb9-40"><a href="#cb9-40" tabindex="-1"></a>  densest_cell <span class="ot">&lt;-</span> <span class="fu">names</span>(<span class="fu">which.max</span>(grid_counts))</span>
+<span id="cb9-41"><a href="#cb9-41" tabindex="-1"></a>  densest_indices <span class="ot">&lt;-</span> <span class="fu">which</span>(grid_key <span class="sc">==</span> densest_cell)</span>
+<span id="cb9-42"><a href="#cb9-42" tabindex="-1"></a></span>
+<span id="cb9-43"><a href="#cb9-43" tabindex="-1"></a>  center_lon <span class="ot">&lt;-</span> <span class="fu">mean</span>(cx[densest_indices], <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb9-44"><a href="#cb9-44" tabindex="-1"></a>  center_lat <span class="ot">&lt;-</span> <span class="fu">mean</span>(cy[densest_indices], <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb9-45"><a href="#cb9-45" tabindex="-1"></a>} <span class="cf">else</span> {</span>
+<span id="cb9-46"><a href="#cb9-46" tabindex="-1"></a>  center_lon <span class="ot">&lt;-</span> <span class="sc">-</span><span class="fl">110.4144</span></span>
+<span id="cb9-47"><a href="#cb9-47" tabindex="-1"></a>  center_lat <span class="ot">&lt;-</span> <span class="fl">39.4991</span></span>
+<span id="cb9-48"><a href="#cb9-48" tabindex="-1"></a>}</span>
+<span id="cb9-49"><a href="#cb9-49" tabindex="-1"></a></span>
+<span id="cb9-50"><a href="#cb9-50" tabindex="-1"></a><span class="co"># Write Arrow IPC file to temporary location</span></span>
+<span id="cb9-51"><a href="#cb9-51" tabindex="-1"></a>temp_arrow <span class="ot">&lt;-</span> <span class="fu">tempfile</span>(<span class="at">fileext =</span> <span class="st">&quot;.arrows&quot;</span>)</span>
+<span id="cb9-52"><a href="#cb9-52" tabindex="-1"></a>arrow_table <span class="ot">&lt;-</span> arrow<span class="sc">::</span><span class="fu">arrow_table</span>(sample_data)</span>
+<span id="cb9-53"><a href="#cb9-53" tabindex="-1"></a>arrow<span class="sc">::</span><span class="fu">write_ipc_stream</span>(arrow_table, temp_arrow)</span>
+<span id="cb9-54"><a href="#cb9-54" tabindex="-1"></a></span>
+<span id="cb9-55"><a href="#cb9-55" tabindex="-1"></a><span class="co"># Set up static file serving</span></span>
+<span id="cb9-56"><a href="#cb9-56" tabindex="-1"></a>static_root <span class="ot">&lt;-</span> <span class="fu">dirname</span>(temp_arrow)</span>
+<span id="cb9-57"><a href="#cb9-57" tabindex="-1"></a>static_name <span class="ot">&lt;-</span> <span class="st">&quot;utahdata&quot;</span></span>
+<span id="cb9-58"><a href="#cb9-58" tabindex="-1"></a><span class="fu">addResourcePath</span>(static_name, static_root)</span>
+<span id="cb9-59"><a href="#cb9-59" tabindex="-1"></a>arrow_url <span class="ot">&lt;-</span> <span class="fu">paste0</span>(static_name, <span class="st">&quot;/&quot;</span>, <span class="fu">basename</span>(temp_arrow))</span>
+<span id="cb9-60"><a href="#cb9-60" tabindex="-1"></a></span>
+<span id="cb9-61"><a href="#cb9-61" tabindex="-1"></a><span class="co"># UI</span></span>
+<span id="cb9-62"><a href="#cb9-62" tabindex="-1"></a>ui <span class="ot">&lt;-</span> <span class="fu">fluidPage</span>(</span>
+<span id="cb9-63"><a href="#cb9-63" tabindex="-1"></a>  <span class="fu">titlePanel</span>(<span class="st">&quot;Utah Buildings - Native GeoArrow Rendering&quot;</span>),</span>
+<span id="cb9-64"><a href="#cb9-64" tabindex="-1"></a>  <span class="fu">deckglOutput</span>(<span class="st">&quot;map&quot;</span>, <span class="at">width =</span> <span class="st">&quot;100%&quot;</span>, <span class="at">height =</span> <span class="st">&quot;600px&quot;</span>)</span>
+<span id="cb9-65"><a href="#cb9-65" tabindex="-1"></a>)</span>
+<span id="cb9-66"><a href="#cb9-66" tabindex="-1"></a></span>
+<span id="cb9-67"><a href="#cb9-67" tabindex="-1"></a><span class="co"># Server</span></span>
+<span id="cb9-68"><a href="#cb9-68" tabindex="-1"></a>server <span class="ot">&lt;-</span> <span class="cf">function</span>(input, output, session) {</span>
+<span id="cb9-69"><a href="#cb9-69" tabindex="-1"></a>  output<span class="sc">$</span>map <span class="ot">&lt;-</span> <span class="fu">renderDeckgl</span>({</span>
+<span id="cb9-70"><a href="#cb9-70" tabindex="-1"></a>    spec <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
+<span id="cb9-71"><a href="#cb9-71" tabindex="-1"></a>      <span class="st">`</span><span class="at">@@type</span><span class="st">`</span> <span class="ot">=</span> <span class="st">&quot;DeckGL&quot;</span>,</span>
+<span id="cb9-72"><a href="#cb9-72" tabindex="-1"></a>      <span class="at">width =</span> <span class="dv">1024</span>,</span>
+<span id="cb9-73"><a href="#cb9-73" tabindex="-1"></a>      <span class="at">height =</span> <span class="dv">600</span>,</span>
+<span id="cb9-74"><a href="#cb9-74" tabindex="-1"></a>      <span class="at">initialViewState =</span> <span class="fu">list</span>(</span>
+<span id="cb9-75"><a href="#cb9-75" tabindex="-1"></a>        <span class="at">longitude =</span> center_lon,</span>
+<span id="cb9-76"><a href="#cb9-76" tabindex="-1"></a>        <span class="at">latitude =</span> center_lat,</span>
+<span id="cb9-77"><a href="#cb9-77" tabindex="-1"></a>        <span class="at">zoom =</span> <span class="dv">12</span>,</span>
+<span id="cb9-78"><a href="#cb9-78" tabindex="-1"></a>        <span class="at">pitch =</span> <span class="dv">0</span>,</span>
+<span id="cb9-79"><a href="#cb9-79" tabindex="-1"></a>        <span class="at">bearing =</span> <span class="dv">0</span></span>
+<span id="cb9-80"><a href="#cb9-80" tabindex="-1"></a>      ),</span>
+<span id="cb9-81"><a href="#cb9-81" tabindex="-1"></a>      <span class="at">controller =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb9-82"><a href="#cb9-82" tabindex="-1"></a>      <span class="at">layers =</span> <span class="fu">list</span>(</span>
+<span id="cb9-83"><a href="#cb9-83" tabindex="-1"></a>        <span class="fu">list</span>(</span>
+<span id="cb9-84"><a href="#cb9-84" tabindex="-1"></a>          <span class="co"># Use GeoArrowPolygonLayer for native rendering (no binary conversion)</span></span>
+<span id="cb9-85"><a href="#cb9-85" tabindex="-1"></a>          <span class="st">`</span><span class="at">@@type</span><span class="st">`</span> <span class="ot">=</span> <span class="st">&quot;GeoArrowPolygonLayer&quot;</span>,</span>
+<span id="cb9-86"><a href="#cb9-86" tabindex="-1"></a>          <span class="at">id =</span> <span class="st">&quot;utah-buildings-native&quot;</span>,</span>
+<span id="cb9-87"><a href="#cb9-87" tabindex="-1"></a>          <span class="at">data =</span> <span class="fu">list</span>(<span class="st">`</span><span class="at">__arrow_url</span><span class="st">`</span> <span class="ot">=</span> arrow_url),</span>
+<span id="cb9-88"><a href="#cb9-88" tabindex="-1"></a>          <span class="at">geometryColumn =</span> <span class="st">&quot;GEOMETRY&quot;</span>,</span>
+<span id="cb9-89"><a href="#cb9-89" tabindex="-1"></a>          <span class="at">getFillColor =</span> <span class="fu">c</span>(<span class="dv">255</span>, <span class="dv">100</span>, <span class="dv">0</span>, <span class="dv">200</span>),</span>
+<span id="cb9-90"><a href="#cb9-90" tabindex="-1"></a>          <span class="at">getLineColor =</span> <span class="fu">c</span>(<span class="dv">255</span>, <span class="dv">255</span>, <span class="dv">255</span>, <span class="dv">100</span>),</span>
+<span id="cb9-91"><a href="#cb9-91" tabindex="-1"></a>          <span class="at">filled =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb9-92"><a href="#cb9-92" tabindex="-1"></a>          <span class="at">stroked =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb9-93"><a href="#cb9-93" tabindex="-1"></a>          <span class="at">extruded =</span> <span class="cn">FALSE</span>,</span>
+<span id="cb9-94"><a href="#cb9-94" tabindex="-1"></a>          <span class="at">pickable =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb9-95"><a href="#cb9-95" tabindex="-1"></a>          <span class="at">autoHighlight =</span> <span class="cn">TRUE</span></span>
+<span id="cb9-96"><a href="#cb9-96" tabindex="-1"></a>        )</span>
+<span id="cb9-97"><a href="#cb9-97" tabindex="-1"></a>      )</span>
+<span id="cb9-98"><a href="#cb9-98" tabindex="-1"></a>    )</span>
+<span id="cb9-99"><a href="#cb9-99" tabindex="-1"></a></span>
+<span id="cb9-100"><a href="#cb9-100" tabindex="-1"></a>    <span class="fu">deckgl</span>(<span class="at">spec =</span> spec, <span class="at">width =</span> <span class="st">&quot;100%&quot;</span>, <span class="at">height =</span> <span class="st">&quot;600px&quot;</span>)</span>
+<span id="cb9-101"><a href="#cb9-101" tabindex="-1"></a>  })</span>
+<span id="cb9-102"><a href="#cb9-102" tabindex="-1"></a></span>
+<span id="cb9-103"><a href="#cb9-103" tabindex="-1"></a>  <span class="co"># Cleanup on session end</span></span>
+<span id="cb9-104"><a href="#cb9-104" tabindex="-1"></a>  <span class="fu">onSessionEnded</span>(<span class="cf">function</span>() {</span>
+<span id="cb9-105"><a href="#cb9-105" tabindex="-1"></a>    <span class="cf">if</span> (<span class="fu">file.exists</span>(temp_arrow)) {</span>
+<span id="cb9-106"><a href="#cb9-106" tabindex="-1"></a>      <span class="fu">unlink</span>(temp_arrow)</span>
+<span id="cb9-107"><a href="#cb9-107" tabindex="-1"></a>    }</span>
+<span id="cb9-108"><a href="#cb9-108" tabindex="-1"></a>  })</span>
+<span id="cb9-109"><a href="#cb9-109" tabindex="-1"></a>}</span>
+<span id="cb9-110"><a href="#cb9-110" tabindex="-1"></a></span>
+<span id="cb9-111"><a href="#cb9-111" tabindex="-1"></a><span class="co"># Run app</span></span>
+<span id="cb9-112"><a href="#cb9-112" tabindex="-1"></a><span class="fu">shinyApp</span>(ui, server)</span></code></pre></div>
+<p><strong>Key differences from binary conversion:</strong></p>
+<ul>
+<li>Uses <code>GeoArrowPolygonLayer</code> instead of
+<code>GeoArrowSolidPolygonLayer</code></li>
+<li>Arrow table passed directly to layer (no conversion to binary
+arrays)</li>
+<li>Supports full data-driven styling with accessors</li>
+<li>No <code>_normalize</code> or <code>_windingOrder</code> flags
+needed</li>
+</ul>
+</div>
+</div>
+<div id="next-steps" class="section level2">
+<h2>Next Steps</h2>
+<ul>
+<li>Build your own specs by swapping the data queries in these templates
+(DuckDB-backed or GeoArrow IPC/Parquet inputs).</li>
+<li>For large datasets, prefer URL-based loading patterns to avoid
+embedding multi-megabyte payloads in HTML.</li>
+<li>Read the <a href="https://deck.gl/docs">deck.gl documentation</a>
+for the full catalog of layers, views, and accessors.</li>
+<li>Follow the <a href="https://github.com/TiRizvanov/rDeckgl">rDeckgl
+GitHub</a> for updates and additional recipes.</li>
+</ul>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

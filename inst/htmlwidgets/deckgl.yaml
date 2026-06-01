@@ -1,0 +1,29 @@
+dependencies:
+  - name: process-polyfill
+    version: 1.0.0
+    src: htmlwidgets/lib/deckgl
+    script: process-polyfill.js
+  - name: react
+    version: 18.2.0
+    src: htmlwidgets/lib/deckgl
+    script: react.production.min.js
+  - name: react-dom
+    version: 18.2.0
+    src: htmlwidgets/lib/deckgl
+    script: react-dom.production.min.js
+  - name: maplibre-gl
+    version: 4.0.0
+    src: htmlwidgets/lib/maplibre
+    script: maplibre-gl.js
+    stylesheet: maplibre-gl.css
+  - name: deckgl-bundle
+    version: 9.1.15
+    src: htmlwidgets/lib/deckgl
+    script: deckgl-bundle.js
+    stylesheet: deckgl-widgets.css
+  - name: parquet-wasm
+    version: 0.6.0
+    src: htmlwidgets/lib/parquet-wasm
+    attachment:
+      - parquet_wasm.js
+      - parquet_wasm_bg.wasm
