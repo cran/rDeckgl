@@ -312,6 +312,7 @@ async function renderDeckGlView(el, payload) {
 
   // Helper: Fetch Parquet from URL and parse to Arrow table
   async function parseParquetFromUrl(url) {
+    url = resolveAttachmentUrl(url);
     if (!url || url === '') return null;
     if (!arrow) {
       console.warn('[deckgl] Apache Arrow not available');
@@ -382,7 +383,43 @@ async function renderDeckGlView(el, payload) {
   }
 
   // Helper: Fetch Arrow IPC from URL and parse to Arrow table
-  async function parseArrowFromUrl(url) {
+  // A data file written for file transport travels with the widget as an html
+  // dependency attachment, so the page may serve it from the dependency
+  // directory rather than beside the HTML. Prefer the attachment link when the
+  // page has one; fall back to the relative name (file served next to the page).
+  function resolveAttachmentUrl(name) {
+    if (typeof name !== 'string' || name === '') return name;
+    if (/^([a-z]+:)?\/\//i.test(name) || name.startsWith('data:')) return name;
+    try {
+      const links = document.querySelectorAll('link[rel="attachment"]');
+      for (const link of links) {
+        const href = link.getAttribute('href');
+        if (!href) continue;
+        if (href === name || href.endsWith('/' + name)) return href;
+      }
+    } catch (e) {
+      // document may be unavailable in a non-browser test harness
+    }
+    // saveWidget(selfcontained = TRUE) inlines attachments as data: URIs, which
+    // cannot be matched by name, so the page would fall back to the bare file
+    // name and 404. Say so rather than letting the layer render empty.
+    try {
+      const inlined = [...document.querySelectorAll('link[rel="attachment"]')]
+        .some(link => (link.getAttribute('href') || '').startsWith('data:'));
+      if (inlined) {
+        console.error('[%s] "%s" cannot be resolved because this page was saved ' +
+          'with selfcontained = TRUE, which inlines the data file as a data: URI. ' +
+          'Save with htmlwidgets::saveWidget(selfcontained = FALSE) for file transport.',
+          'deckgl', name);
+      }
+    } catch (e) {
+      // document may be unavailable outside a browser
+    }
+    return name;
+  }
+
+  async function parseArrowFromUrl(rawUrl) {
+    const url = resolveAttachmentUrl(rawUrl);
     if (!url || url === '') return null;
     if (!arrow) {
       console.warn('[deckgl] Apache Arrow not available');
@@ -733,13 +770,38 @@ async function renderDeckGlView(el, payload) {
         return null;
       }
 
-      // Use first chunk (dataset is single chunk)
+      // IPC streams can contain multiple record batches. Convert each batch
+      // through the same fast path, then rebase its feature/vertex offsets.
+      if (geomCol.data.length > 1) {
+        let rowOffset = 0;
+        const parts = geomCol.data.map(chunk => {
+          const part = arrowPolygonToBinary(table.slice(rowOffset, rowOffset + chunk.length), geomColumnName);
+          rowOffset += chunk.length;
+          if (!part) throw new Error('Invalid polygon record batch');
+          return part;
+        });
+        const positions = new Float32Array(parts.reduce((n, p) => n + p.positions.length, 0));
+        const startIndices = new Uint32Array(table.numRows + 1);
+        let featureOffset = 0, vertexOffset = 0;
+        for (const part of parts) {
+          positions.set(part.positions, vertexOffset * 2);
+          for (let i = 0; i < part.length; i++) {
+            startIndices[featureOffset + i] = vertexOffset + part.startIndices[i];
+          }
+          featureOffset += part.length;
+          vertexOffset += part.positions.length / 2;
+        }
+        startIndices[featureOffset] = vertexOffset;
+        return {length: table.numRows, startIndices, positions};
+      }
+
       const chunk = geomCol.data[0];
       if (!chunk || !chunk.valueOffsets) {
         console.warn('[deckgl] Geometry column has no valueOffsets');
         return null;
       }
-      const polyOffsets = chunk.valueOffsets;
+      // Arrow buffers may be padded, and sliced vectors retain child buffers.
+      const polyOffsets = chunk.valueOffsets.subarray(0, chunk.length + 1);
 
       const rings = geomCol.getChildAt(0);
       if (!rings || !rings.data || rings.data.length === 0) {
@@ -795,9 +857,13 @@ async function renderDeckGlView(el, payload) {
         return null;
       }
 
+      const vertexStart = ringOffsets[polyOffsets[0]];
+      const vertexEnd = ringOffsets[polyOffsets[chunk.length]];
+      coordX = coordX.subarray(vertexStart, vertexEnd);
+      coordY = coordY.subarray(vertexStart, vertexEnd);
       const startIndices = new Uint32Array(polyOffsets.length);
       for (let i = 0; i < polyOffsets.length; i++) {
-        startIndices[i] = ringOffsets[polyOffsets[i]];
+        startIndices[i] = ringOffsets[polyOffsets[i]] - vertexStart;
       }
 
       const positions = new Float32Array(coordX.length * 2);
@@ -1430,14 +1496,226 @@ async function renderDeckGlView(el, payload) {
     return layers;
   }
 
+  // Convert an Arrow table into deck.gl binary attributes for a standard
+  // (non-GeoArrow) layer. Column references in getPosition, getFillColor and
+  // getRadius become typed arrays spanning every record batch. Any other
+  // accessor that references row fields cannot run against binary data, so
+  // the whole table is converted to row objects instead. Returns
+  // {binary: {length, attributes}} or {rows}.
+  function arrowTableToBinaryAttributes(table, layerSpec) {
+    const numRows = table.numRows;
+    const layerName = layerSpec.id || layerSpec['@@type'] || 'layer';
+    const identifier = /^[A-Za-z_][A-Za-z0-9_]*$/;
+    const numberLiteral = /^[-+]?(\d+\.?\d*|\.\d+)([eE][-+]?\d+)?$/;
+    const binaryAccessors = {getPosition: [2, 3], getFillColor: [3, 4], getRadius: [1, 1]};
+
+    // "@@=[x, y, 0]", "@@=radius" or {fields: [...]} into column/constant
+    // elements; null when the value is not a plain column reference.
+    function parseElements(value) {
+      let parts;
+      if (value && typeof value === 'object' && !Array.isArray(value) && Array.isArray(value.fields)) {
+        parts = value.fields;
+      } else if (typeof value === 'string' && value.startsWith('@@=')) {
+        const body = value.slice(3).trim();
+        parts = body.startsWith('[') && body.endsWith(']') ? body.slice(1, -1).split(',') : [body];
+      } else {
+        return null;
+      }
+      const elements = [];
+      for (const part of parts) {
+        const text = typeof part === 'string' ? part.trim() : part;
+        if (typeof text === 'number' && Number.isFinite(text)) {
+          elements.push({constant: text});
+        } else if (typeof text === 'string' && identifier.test(text)) {
+          elements.push({column: text});
+        } else if (typeof text === 'string' && numberLiteral.test(text)) {
+          elements.push({constant: Number(text)});
+        } else {
+          return null;
+        }
+      }
+      return elements.length > 0 ? elements : null;
+    }
+
+    function columnValues(name) {
+      const column = table.getChild(name);
+      if (!column) {
+        throw new Error(`column "${name}" is not in the query result`);
+      }
+      // toArray() returns the raw values buffer and ignores the validity
+      // bitmap, so a NULL cell would contribute whatever bytes sit in its slot.
+      if (Number(column.nullCount) > 0) {
+        throw new Error(`column "${name}" contains NULL values`);
+      }
+      // toArray() concatenates record batches; a typed array of a different
+      // length means a multi-word type such as DECIMAL.
+      const values = column.toArray();
+      if (values.length !== numRows) {
+        throw new Error(`column "${name}" has an unsupported type ${column.type}`);
+      }
+      return values;
+    }
+
+    function rowObjects(reason) {
+      console.warn(`[deckgl] ${layerName}: ${reason}; converting the Arrow table to row objects instead of binary attributes. Row objects are slower and, for Arrow types without a numeric representation, lossy.`);
+      const names = table.schema.fields.map(f => f.name);
+      const columns = names.map(name => {
+        const column = table.getChild(name);
+        // toArray() ignores the validity bitmap, so a column with NULLs must be
+        // read element-wise to keep them null instead of raw buffer bytes.
+        if (Number(column.nullCount) > 0) return Array.from(column);
+        const values = column.toArray();
+        return values.length === numRows ? values : Array.from(column);
+      });
+      // DuckDB returns DECIMAL for ordinary aggregates such as SUM or AVG over
+      // integers, and Arrow represents those as multi-word objects. Handing one
+      // to deck.gl renders nothing useful: it stringifies to "0" and its
+      // valueOf() throws. Convert what can be converted and drop the rest,
+      // naming the column once so the cause is visible.
+      const unconvertible = new Set();
+      const scalar = (value, name, type) => {
+        if (value === null || value === undefined || typeof value === 'number') return value;
+        if (typeof value === 'bigint') return Number(value);
+        if (typeof value === 'string' || typeof value === 'boolean') return value;
+        const asNumber = Number(value);
+        if (Number.isFinite(asNumber)) return asNumber;
+        unconvertible.add(`${name} (${type})`);
+        return null;
+      };
+      const types = names.map(name => String(table.getChild(name).type));
+      const rows = new Array(numRows);
+      for (let i = 0; i < numRows; i++) {
+        const row = {};
+        for (let c = 0; c < names.length; c++) {
+          row[names[c]] = scalar(columns[c][i], names[c], types[c]);
+        }
+        rows[i] = row;
+      }
+      if (unconvertible.size) {
+        console.warn(`[deckgl] ${layerName}: dropped values of column(s) ` +
+          `${[...unconvertible].join(', ')}: this Arrow type has no numeric ` +
+          'representation the layer can use. Cast the column in SQL, for ' +
+          'example with CAST(... AS DOUBLE).');
+      }
+      return {rows};
+    }
+
+    function interleave(out, stride, elements, fill) {
+      elements.forEach((element, k) => {
+        if ('constant' in element) {
+          for (let i = 0; i < numRows; i++) out[i * stride + k] = element.constant;
+          return;
+        }
+        const values = columnValues(element.column);
+        for (let i = 0; i < numRows; i++) out[i * stride + k] = Number(values[i]);
+      });
+      for (let k = elements.length; k < stride; k++) {
+        for (let i = 0; i < numRows; i++) out[i * stride + k] = fill;
+      }
+      return out;
+    }
+
+    const references = {};
+    for (const [key, value] of Object.entries(layerSpec)) {
+      if (key === 'data') continue;
+      const isReference = (typeof value === 'string' && value.startsWith('@@=')) ||
+        (value && typeof value === 'object' && !Array.isArray(value) && Array.isArray(value.fields));
+      if (!isReference) continue;
+      if (!(key in binaryAccessors)) {
+        return rowObjects(`accessor ${key} = ${JSON.stringify(value)} references row fields`);
+      }
+      const elements = parseElements(value);
+      const [min, max] = binaryAccessors[key];
+      if (!elements || elements.length < min || elements.length > max) {
+        return rowObjects(`accessor ${key} = ${JSON.stringify(value)} is not a plain column reference`);
+      }
+      references[key] = elements;
+    }
+    if (!references.getPosition) {
+      return rowObjects('getPosition is not a column reference');
+    }
+
+    try {
+      const attributes = {
+        getPosition: {value: interleave(new Float32Array(numRows * 3), 3, references.getPosition, 0), size: 3}
+      };
+      if (references.getFillColor) {
+        attributes.getFillColor = {
+          value: interleave(new Uint8Array(numRows * 4), 4, references.getFillColor, 255),
+          size: 4,
+          normalized: true
+        };
+      }
+      if (references.getRadius) {
+        attributes.getRadius = {value: interleave(new Float32Array(numRows), 1, references.getRadius, 0), size: 1};
+      }
+      return {binary: {length: numRows, attributes}};
+    } catch (err) {
+      return rowObjects(err.message);
+    }
+  }
+
+  // Load binary payloads referenced by standard (non-GeoArrow) layers. The
+  // result is aligned with layerSpecs: null where the layer keeps its spec
+  // data, otherwise the arrowTableToBinaryAttributes() result.
+  async function processStandardArrowLayers(layerSpecs) {
+    const loaded = new Array(layerSpecs.length).fill(null);
+    for (let i = 0; i < layerSpecs.length; i++) {
+      const layerSpec = layerSpecs[i];
+      const dataNode = layerSpec && layerSpec.data;
+      if (!dataNode || typeof dataNode !== 'object' || Array.isArray(dataNode)) continue;
+      let arrowTable = null;
+      if ('__arrow' in dataNode) {
+        arrowTable = await parseArrowIPC(dataNode.__arrow);
+      } else if (dataNode.__arrow_url) {
+        arrowTable = await parseArrowFromUrl(dataNode.__arrow_url);
+      } else if ('__parquet' in dataNode) {
+        arrowTable = await parseParquetBase64(dataNode.__parquet);
+      } else if (dataNode.__parquet_url) {
+        arrowTable = await parseParquetFromUrl(dataNode.__parquet_url);
+      } else {
+        continue;
+      }
+      if (!arrowTable) {
+        console.warn(`[deckgl] ${layerSpec.id || layerSpec['@@type']}: no Arrow data could be loaded; rendering an empty layer`);
+        loaded[i] = {rows: []};
+        continue;
+      }
+      loaded[i] = arrowTableToBinaryAttributes(arrowTable, layerSpec);
+      if (loaded[i].binary) {
+        console.log(`[deckgl] ${layerSpec.id || layerSpec['@@type']}: bound ${arrowTable.numRows} rows as binary attributes`,
+          Object.keys(loaded[i].binary.attributes));
+      }
+    }
+    return loaded;
+  }
+
+  // Replace converted layers with clones carrying their binary data. Layers
+  // are matched by position while the converter kept them aligned, else by id.
+  function attachBinaryLayerData(layers, layerSpecs, loaded) {
+    if (!Array.isArray(layers)) return layers;
+    const aligned = layers.length === layerSpecs.length;
+    return layers.map((layer, i) => {
+      const index = aligned ? i : layerSpecs.findIndex(s => s && s.id !== undefined && layer && s.id === layer.id);
+      const payload = index >= 0 ? loaded[index] : null;
+      if (!payload || !payload.binary || !layer || typeof layer.clone !== 'function') return layer;
+      return layer.clone({data: payload.binary});
+    });
+  }
+
   // Process GeoArrow layers (convert WKB, create layer instances)
   const geoArrowLayers = await processGeoArrowLayers(spec.layers || []);
 
   // Prepare spec for JSONConverter - only standard (non-GeoArrow) layers
   const standardLayerSpecs = (spec.layers || []).filter(l => !isGeoArrowLayerType(l['@@type']));
+  const standardLayerData = await processStandardArrowLayers(standardLayerSpecs);
   const specForConverter = {
     ...spec,
-    layers: standardLayerSpecs
+    // Binary attributes are attached after conversion; row objects convert as-is.
+    layers: standardLayerSpecs.map((layerSpec, i) => {
+      const payload = standardLayerData[i];
+      return payload ? {...layerSpec, data: payload.rows || []} : layerSpec;
+    })
   };
   console.log('[deckgl] Spec for JSONConverter:', {
     hasViews: !!specForConverter.views,
@@ -1500,7 +1778,7 @@ async function renderDeckGlView(el, payload) {
 
   // Fallback: if no layers were created, try converting each standard layer individually
   if (!props.layers || props.layers.length === 0) {
-    const fallbackLayers = (standardLayerSpecs || [])
+    const fallbackLayers = (specForConverter.layers || [])
       .map((layerSpec) => {
         try {
           return converter.convert(layerSpec);
@@ -1516,6 +1794,7 @@ async function renderDeckGlView(el, payload) {
       props.layers = fallbackLayers;
     }
   }
+  props.layers = attachBinaryLayerData(props.layers, standardLayerSpecs, standardLayerData);
 
   // Views: use JSONConverter to build view instances, then ensure controller is enabled for MapView
   if (!props.views && spec.views) {

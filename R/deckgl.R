@@ -15,19 +15,52 @@ NULL
 #' @param data      Named list of data.frames to register in DuckDB. These tables
 #'                  can be referenced in the spec using `type = "duckdb"` data nodes.
 #' @param con       Optional DuckDB connection to use for queries. If provided,
-#'                  this connection will be used instead of creating a new one.
-#'                  This is useful for GeoArrow workflows where you need spatial
-#'                  extension and geometry tables already set up.
+#'                  this connection is used instead of creating a new one, which
+#'                  is useful for GeoArrow workflows where the spatial extension
+#'                  and geometry tables are already set up. `rDeckgl` never
+#'                  disconnects a supplied connection, in a Shiny session or
+#'                  otherwise; only connections it opens itself are closed, when
+#'                  the call returns or when the Shiny session that serves their
+#'                  queries ends.
 #' @param data_transport How hydrated Arrow/Parquet query results are delivered
 #'                  to the browser. `"auto"` uses `"file"` when `data_dir` is
 #'                  supplied and otherwise falls back to `"inline"` for portable
 #'                  widgets; `"inline"` embeds base64 payloads in the widget;
 #'                  `"file"` writes binary files to `data_dir` and uses relative
-#'                  URLs.
-#' @param data_dir  Directory for `"file"` transport. Serve or save the widget
+#'                  URLs. Data nodes with `format = "arrow"` are exported by
+#'                  DuckDB itself under either transport; see Details.
+#' @param data_dir  Directory for `"file"` transport; when omitted a session
+#'                  temporary directory is used. The data files travel with the
+#'                  widget as an html dependency attachment, so
+#'                  `htmlwidgets::saveWidget(selfcontained = FALSE)`, the
+#'                  RStudio Viewer and Shiny all resolve them
+#'                  (`selfcontained = TRUE` is not supported for file
+#'                  transport). Serve or save the widget
 #'                  from the same directory so relative URLs resolve.
 #' @param width     CSS or pixel width (e.g. "100\%", "600px", or numeric).
 #' @param height    CSS or pixel height (e.g. "100\%", "600px", or numeric).
+#'
+#' @details
+#' A `type = "duckdb"` data node with `format = "arrow"` never materialises
+#' query rows in R. DuckDB writes the result straight to a binary file using
+#' the first method that succeeds: `COPY ... (FORMAT ARROWS)` when the
+#' community `nanoarrow` DuckDB extension can be loaded, otherwise Arrow
+#' record-batch streaming through `arrow::write_ipc_stream()`, otherwise
+#' `COPY ... (FORMAT PARQUET)`. With `data_transport = "file"` that file is
+#' written into `data_dir` and the node carries a relative `__arrow_url` (or
+#' `__parquet_url`); with `"inline"` its bytes are base64-encoded into the
+#' widget as `__arrow` (or `__parquet`). Either way the node records the
+#' method in `__export_method` (`"copy_arrows"`, `"record_batch_stream"` or
+#' `"copy_parquet"`). Extensions are never installed on a user-supplied
+#' `con`; only `LOAD nanoarrow` is attempted.
+#'
+#' In the browser, standard layers such as `ScatterplotLayer` bind such a
+#' table as binary attributes rather than row objects when `getPosition`,
+#' `getFillColor` and `getRadius` are plain column references, for example
+#' `"@@@@=[x, y]"`, `"@@@@=[x, y, 0]"`, `"@@@@=[r, g, b]"` and `"@@@@=radius"`
+#' (or `list(fields = c("x", "y"))`). Constant colours and radii stay plain
+#' props. Any other accessor that references row fields makes the layer fall
+#' back to row objects, with a console warning naming the accessor.
 #'
 #' @return An htmlwidget that renders the Deck.gl visualization.
 #'
@@ -85,11 +118,14 @@ deckgl <- function(
     data_transport <- if (!is.null(data_dir)) "file" else "inline"
   }
   if (identical(data_transport, "file")) {
+    if (is.null(data_dir)) data_dir <- .deckgl_session_data_dir("rdeckgl-data-")
     if (!is.character(data_dir) || length(data_dir) != 1L || !nzchar(data_dir)) {
-      stop("'data_dir' is required when data_transport = 'file'.", call. = FALSE)
+      stop("'data_dir' must be a single directory path.", call. = FALSE)
     }
     dir.create(data_dir, recursive = TRUE, showWarnings = FALSE)
   }
+  .deckgl_reset_data_files()
+  on.exit(.deckgl_reset_data_files(), add = TRUE)
 
   # 1) Determine format
   fmt <- specType
@@ -152,9 +188,14 @@ deckgl <- function(
   # 4) Setup DuckDB connection with spatial support
   # Use provided connection or create a new one
   own_con <- is.null(con)
+  # A connection this function opened is closed when the call returns, unless a
+  # Shiny session takes it over to serve the widget's queries. A connection the
+  # caller supplied is never closed here: the caller owns its lifetime, and
+  # closing it would break every later session in the same R process.
+  keep_own_con <- FALSE
   if (own_con) {
     con <- DBI::dbConnect(duckdb::duckdb(), dbdir = ":memory:")
-    on.exit(try(DBI::dbDisconnect(con), silent = TRUE), add = TRUE)
+    on.exit(if (!keep_own_con) try(DBI::dbDisconnect(con), silent = TRUE), add = TRUE)
     
     # Load spatial extension for GeoArrow support
     try(DBI::dbExecute(con, "INSTALL spatial"), silent = TRUE)
@@ -248,12 +289,14 @@ deckgl <- function(
   session <- shiny::getDefaultReactiveDomain()
 
   if (!is.null(session) && !is.null(con)) {
-    # Store connection in session userData
-    session$userData$deckglConnections <-
-      c(session$userData$deckglConnections, setNames(list(con), uid))
-
-    # Override on.exit to prevent premature disconnection
-    on.exit(NULL)
+    # The session serves queries after this call returns, so a connection this
+    # function opened must outlive the call and is handed to the session to
+    # close. Caller-supplied connections are deliberately not registered.
+    keep_own_con <- TRUE
+    if (own_con) {
+      session$userData$deckglConnections <-
+        c(session$userData$deckglConnections, setNames(list(con), uid))
+    }
 
     # Register query handler
     shiny::observeEvent(
@@ -306,9 +349,7 @@ deckgl <- function(
             } else {
               # Legacy JSON format
               dfres <- DBI::dbGetQuery(con, req$sql)
-              payload <- lapply(seq_len(nrow(dfres)), function(i) {
-                as.list(dfres[i, , drop = FALSE])
-              })
+              payload <- .deckgl_data_frame_rows(dfres)
               session$sendCustomMessage(
                 paste0(uid, "_deckgl_response"),
                 list(
@@ -330,12 +371,14 @@ deckgl <- function(
       ignoreNULL = TRUE
     )
 
-    # Cleanup connections on session end
+    # Close only the connections this package opened; a supplied connection is
+    # left exactly as the caller handed it over.
     if (is.null(session$userData$.deckglCleanup)) {
       session$onSessionEnded(function() {
         lapply(session$userData$deckglConnections, function(cnn) {
           try(DBI::dbDisconnect(cnn), silent = TRUE)
         })
+        session$userData$deckglConnections <- NULL
       })
       session$userData$.deckglCleanup <- TRUE
     }
@@ -346,6 +389,11 @@ deckgl <- function(
     spec = spec_list,
     widgetId = uid
   )
+  attr(widget_data, "TOJSON_FUNC") <- .deckgl_to_json
+
+  data_dependency <- if (identical(data_transport, "file")) {
+    .deckgl_data_dependency(.deckgl_recorded_data_files(), data_dir, uid)
+  } else NULL
 
   htmlwidgets::createWidget(
     name = "deckgl",
@@ -353,7 +401,61 @@ deckgl <- function(
     width = width,
     height = height,
     package = "rDeckgl",
+    dependencies = if (is.null(data_dependency)) NULL else list(data_dependency),
+    preRenderHook = .deckgl_pre_render,
     sizingPolicy = htmlwidgets::sizingPolicy(browser.fill = TRUE)
+  )
+}
+
+
+# Files written for `data_transport = "file"` during one deckgl() call. The
+# widget must ship them as an html dependency attachment, otherwise a relative
+# URL only resolves when the page happens to be served from `data_dir`.
+# An auto-created data directory is scoped to the Shiny session that renders the
+# widget: one directory per session instead of one per render, removed when the
+# session ends. Outside Shiny it is a session temporary directory as before.
+# Re-rendering a widget still writes a new payload into that directory; the
+# previous one is removed with the directory when the session ends.
+.deckgl_session_data_dir <- function(prefix) {
+  session <- if (requireNamespace("shiny", quietly = TRUE)) shiny::getDefaultReactiveDomain() else NULL
+  if (is.null(session)) return(tempfile(prefix))
+  existing <- session$userData$.deckgl_data_dir
+  if (!is.null(existing) && dir.exists(existing)) return(existing)
+  path <- tempfile(prefix)
+  dir.create(path, recursive = TRUE, showWarnings = FALSE)
+  session$userData$.deckgl_data_dir <- path
+  session$onSessionEnded(function() unlink(path, recursive = TRUE))
+  path
+}
+
+.deckgl_data_file_registry <- new.env(parent = emptyenv())
+.deckgl_data_file_registry$files <- character()
+
+.deckgl_reset_data_files <- function() {
+  .deckgl_data_file_registry$files <- character()
+  invisible(NULL)
+}
+
+.deckgl_record_data_file <- function(path) {
+  .deckgl_data_file_registry$files <- c(.deckgl_data_file_registry$files, path)
+  invisible(path)
+}
+
+.deckgl_recorded_data_files <- function() unique(.deckgl_data_file_registry$files)
+
+# One dependency per widget, carrying its data files as attachments. htmltools
+# copies attachments next to the page on save and print (RStudio Viewer), and
+# Shiny serves the directory, so the relative URLs in the spec resolve in all
+# three contexts.
+.deckgl_data_dependency <- function(files, data_dir, uid) {
+  files <- files[file.exists(files)]
+  if (!length(files)) return(NULL)
+  htmltools::htmlDependency(
+    name = paste0("deckgl-data-", uid),
+    version = as.character(utils::packageVersion("rDeckgl")),
+    src = c(file = normalizePath(data_dir, winslash = "/", mustWork = TRUE)),
+    attachment = stats::setNames(basename(files), paste0("data", seq_along(files))),
+    all_files = FALSE
   )
 }
 
@@ -534,6 +636,7 @@ hydrate_deckgl_spec <- function(
               if (!file.copy(temp_parquet, target, overwrite = TRUE)) {
                 stop("Failed to write Parquet data file: ", target, call. = FALSE)
               }
+              .deckgl_record_data_file(target)
               return(list(
                 `__parquet_url` = basename(target),
                 `__geoarrow` = TRUE
@@ -551,20 +654,9 @@ hydrate_deckgl_spec <- function(
           })
           return(result)
         } else if (fmt == "arrow") {
-          # Regular Arrow format without GeoArrow metadata
-          df <- DBI::dbGetQuery(con, query)
-          if (!is.data.frame(df) || nrow(df) == 0) {
-            return(list(
-              `__arrow` = "",
-              `__arrow_format` = "stream"
-            ))
-          }
-          df[] <- lapply(df, function(col) {
-            if (is.factor(col)) as.character(col) else col
-          })
-          arrow_table <- arrow::as_arrow_table(df)
-          raw_bytes <- arrow::write_to_raw(arrow_table, format = "stream")
-          return(.deckgl_arrow_data_node(raw_bytes, data_transport, data_dir, "arrow"))
+          # Regular Arrow format without GeoArrow metadata. DuckDB writes the
+          # result itself, so rows never enter R.
+          return(.deckgl_export_arrow_data_node(con, query, data_transport, data_dir))
         } else {
           # Default JSON format
           df <- DBI::dbGetQuery(con, query)
@@ -598,19 +690,8 @@ hydrate_deckgl_spec <- function(
           })
 
           # Convert to row-oriented format, preserving list columns
-          rows <- lapply(seq_len(nrow(df)), function(i) {
-            row <- list()
-            for (col_name in names(df)) {
-              val <- df[[col_name]][i]
-              # Preserve list-column structure (e.g., polygon coordinates)
-              if (is.list(val) && length(val) == 1) {
-                row[[col_name]] <- val[[1]]
-              } else {
-                row[[col_name]] <- val
-              }
-            }
-            row
-          })
+          rows <- .deckgl_hydrate_rows(df)
+          attr(rows, "rdeckgl_json_rows") <- TRUE
           return(rows)
         }
       }
@@ -635,17 +716,134 @@ hydrate_deckgl_spec <- function(
   transform_node(spec, inside_data = FALSE)
 }
 
-.deckgl_write_data_file <- function(raw_bytes, data_dir, prefix, ext) {
+# One statement only. The check is deliberately conservative: a ';' anywhere
+# other than the end (including inside a string literal) is refused rather than
+# parsed, because the export ladder hands the text to several engines.
+.deckgl_single_statement <- function(query) {
+  if (!is.character(query) || length(query) != 1L) {
+    stop("A DuckDB data node needs a single SQL string.", call. = FALSE)
+  }
+  trimmed <- sub("[[:space:];]+$", "", query)
+  if (grepl(";", trimmed, fixed = TRUE)) {
+    stop("A DuckDB data node must contain a single SQL statement; ",
+         "remove the ';' inside the query.", call. = FALSE)
+  }
+  trimmed
+}
+
+.deckgl_data_file_stem <- function(data_dir, prefix) {
   if (!is.character(data_dir) || length(data_dir) != 1L || !nzchar(data_dir)) {
     stop("'data_dir' is required for file transport.", call. = FALSE)
   }
   dir.create(data_dir, recursive = TRUE, showWarnings = FALSE)
-  path <- file.path(
+  file.path(
     data_dir,
-    sprintf("deckgl_%s_%08x%s", prefix, sample.int(.Machine$integer.max, 1L), ext)
+    sprintf("deckgl_%s_%08x", prefix, sample.int(.Machine$integer.max, 1L))
   )
+}
+
+.deckgl_write_data_file <- function(raw_bytes, data_dir, prefix, ext) {
+  path <- paste0(.deckgl_data_file_stem(data_dir, prefix), ext)
   writeBin(raw_bytes, path)
+  .deckgl_record_data_file(path)
   list(`__arrow_url` = basename(path))
+}
+
+# Export a query result straight from DuckDB into a binary file. Rows never
+# pass through R: each rung streams from the database engine, and the ladder
+# only descends when a rung is unavailable on this DuckDB build.
+#   1. COPY (FORMAT ARROWS): needs the community nanoarrow extension.
+#   2. Arrow record-batch streaming through arrow::write_ipc_stream().
+#   3. COPY (FORMAT PARQUET): always available.
+.deckgl_export_query_file <- function(con, query, path_stem) {
+  # COPY wraps the query in parentheses, so a trailing semicolon would break the
+  # first rung for a cosmetic reason. Anything beyond one statement is refused:
+  # the COPY rung would fail to parse and the record-batch rung would execute
+  # every statement on the caller's connection and export the last result.
+  query <- .deckgl_single_statement(query)
+  failures <- character()
+  attempt <- function(method, format, export) {
+    path <- paste0(path_stem, ".", format)
+    ok <- tryCatch({
+      export(path)
+      TRUE
+    }, error = function(e) {
+      failures[[method]] <<- conditionMessage(e)
+      FALSE
+    })
+    if (!ok) {
+      # A failed rung may leave a partial file behind.
+      unlink(path)
+      return(NULL)
+    }
+    list(path = path, format = format, method = method)
+  }
+
+  # Loading is a probe, not an install: a user-supplied connection keeps its
+  # extension set, and a missing extension simply skips the first rung.
+  nanoarrow_loaded <- tryCatch({
+    DBI::dbExecute(con, "LOAD nanoarrow")
+    TRUE
+  }, error = function(e) {
+    failures[["copy_arrows"]] <<- paste("LOAD nanoarrow:", conditionMessage(e))
+    FALSE
+  })
+  if (nanoarrow_loaded) {
+    result <- attempt("copy_arrows", "arrows", function(path) {
+      DBI::dbExecute(con, sprintf(
+        "COPY (%s) TO %s (FORMAT ARROWS)", query, DBI::dbQuoteString(con, path)
+      ))
+    })
+    if (!is.null(result)) return(result)
+  }
+
+  result <- attempt("record_batch_stream", "arrows", function(path) {
+    res <- DBI::dbSendQuery(con, query, arrow = TRUE)
+    on.exit(DBI::dbClearResult(res), add = TRUE)
+    arrow::write_ipc_stream(duckdb::duckdb_fetch_record_batch(res), path)
+  })
+  if (!is.null(result)) return(result)
+
+  result <- attempt("copy_parquet", "parquet", function(path) {
+    DBI::dbExecute(con, sprintf(
+      "COPY (%s) TO %s (FORMAT PARQUET)", query, DBI::dbQuoteString(con, path)
+    ))
+  })
+  if (!is.null(result)) return(result)
+
+  stop(
+    "Failed to export the DuckDB query result as Arrow or Parquet. ",
+    paste(sprintf("%s: %s", names(failures), failures), collapse = "; "),
+    call. = FALSE
+  )
+}
+
+# Build the data node for format = "arrow". File transport exports directly
+# into data_dir; inline transport exports to a temporary file, then embeds
+# its bytes. Neither path fetches rows into R.
+.deckgl_export_arrow_data_node <- function(con, query, data_transport, data_dir) {
+  if (identical(data_transport, "file")) {
+    exported <- .deckgl_export_query_file(
+      con, query, .deckgl_data_file_stem(data_dir, "arrow")
+    )
+    .deckgl_record_data_file(exported$path)
+    node <- if (identical(exported$format, "arrows")) {
+      list(`__arrow_url` = basename(exported$path), `__arrow_format` = "stream")
+    } else {
+      list(`__parquet_url` = basename(exported$path))
+    }
+  } else {
+    exported <- .deckgl_export_query_file(con, query, tempfile("deckgl_arrow_"))
+    on.exit(unlink(exported$path), add = TRUE)
+    raw_bytes <- readBin(exported$path, "raw", file.info(exported$path)$size)
+    node <- if (identical(exported$format, "arrows")) {
+      .deckgl_arrow_data_node(raw_bytes, "inline", NULL, "arrow")
+    } else {
+      list(`__parquet` = base64enc::base64encode(raw_bytes))
+    }
+  }
+  node$`__export_method` <- exported$method
+  node
 }
 
 .deckgl_arrow_data_node <- function(raw_bytes, data_transport, data_dir, prefix, geoarrow = FALSE) {
